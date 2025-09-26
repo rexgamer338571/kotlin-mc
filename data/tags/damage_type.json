@@ -1,0 +1,219 @@
+{
+  "minecraft:no_impact": [
+    "minecraft:drown"
+  ],
+  "minecraft:witch_resistant_to": [
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "minecraft:sonic_boom",
+    "minecraft:thorns"
+  ],
+  "minecraft:avoids_guardian_thorns": [
+    "minecraft:magic",
+    "minecraft:thorns",
+    "#minecraft:is_explosion"
+  ],
+  "minecraft:ignites_armor_stands": [
+    "minecraft:in_fire",
+    "minecraft:campfire"
+  ],
+  "minecraft:is_fire": [
+    "minecraft:in_fire",
+    "minecraft:campfire",
+    "minecraft:on_fire",
+    "minecraft:lava",
+    "minecraft:hot_floor",
+    "minecraft:unattributed_fireball",
+    "minecraft:fireball"
+  ],
+  "minecraft:bypasses_wolf_armor": [
+    "#minecraft:bypasses_invulnerability",
+    "minecraft:cramming",
+    "minecraft:drown",
+    "minecraft:dry_out",
+    "minecraft:freeze",
+    "minecraft:in_wall",
+    "minecraft:indirect_magic",
+    "minecraft:magic",
+    "minecraft:outside_border",
+    "minecraft:starve",
+    "minecraft:thorns",
+    "minecraft:wither"
+  ],
+  "minecraft:is_player_attack": [
+    "minecraft:player_attack",
+    "minecraft:mace_smash"
+  ],
+  "minecraft:damages_helmet": [
+    "minecraft:falling_anvil",
+    "minecraft:falling_block",
+    "minecraft:falling_stalactite"
+  ],
+  "minecraft:is_drowning": [
+    "minecraft:drown"
+  ],
+  "minecraft:burns_armor_stands": [
+    "minecraft:on_fire"
+  ],
+  "minecraft:burn_from_stepping": [
+    "minecraft:campfire",
+    "minecraft:hot_floor"
+  ],
+  "minecraft:is_freezing": [
+    "minecraft:freeze"
+  ],
+  "minecraft:bypasses_effects": [
+    "minecraft:starve"
+  ],
+  "minecraft:is_fall": [
+    "minecraft:fall",
+    "minecraft:ender_pearl",
+    "minecraft:stalagmite"
+  ],
+  "minecraft:panic_causes": [
+    "#minecraft:panic_environmental_causes",
+    "minecraft:arrow",
+    "minecraft:dragon_breath",
+    "minecraft:explosion",
+    "minecraft:fireball",
+    "minecraft:fireworks",
+    "minecraft:indirect_magic",
+    "minecraft:magic",
+    "minecraft:mob_attack",
+    "minecraft:mob_projectile",
+    "minecraft:player_explosion",
+    "minecraft:sonic_boom",
+    "minecraft:sting",
+    "minecraft:thrown",
+    "minecraft:trident",
+    "minecraft:unattributed_fireball",
+    "minecraft:wind_charge",
+    "minecraft:wither",
+    "minecraft:wither_skull",
+    "#minecraft:is_player_attack"
+  ],
+  "minecraft:wither_immune_to": [
+    "minecraft:drown"
+  ],
+  "minecraft:bypasses_enchantments": [
+    "minecraft:sonic_boom"
+  ],
+  "minecraft:bypasses_armor": [
+    "minecraft:on_fire",
+    "minecraft:in_wall",
+    "minecraft:cramming",
+    "minecraft:drown",
+    "minecraft:fly_into_wall",
+    "minecraft:generic",
+    "minecraft:wither",
+    "minecraft:dragon_breath",
+    "minecraft:starve",
+    "minecraft:fall",
+    "minecraft:ender_pearl",
+    "minecraft:freeze",
+    "minecraft:stalagmite",
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "minecraft:out_of_world",
+    "minecraft:generic_kill",
+    "minecraft:sonic_boom",
+    "minecraft:outside_border"
+  ],
+  "minecraft:panic_environmental_causes": [
+    "minecraft:cactus",
+    "minecraft:freeze",
+    "minecraft:hot_floor",
+    "minecraft:in_fire",
+    "minecraft:lava",
+    "minecraft:lightning_bolt",
+    "minecraft:on_fire"
+  ],
+  "minecraft:is_projectile": [
+    "minecraft:arrow",
+    "minecraft:trident",
+    "minecraft:mob_projectile",
+    "minecraft:unattributed_fireball",
+    "minecraft:fireball",
+    "minecraft:wither_skull",
+    "minecraft:thrown",
+    "minecraft:wind_charge"
+  ],
+  "minecraft:bypasses_invulnerability": [
+    "minecraft:out_of_world",
+    "minecraft:generic_kill"
+  ],
+  "minecraft:can_break_armor_stand": [
+    "minecraft:player_explosion",
+    "#minecraft:is_player_attack"
+  ],
+  "minecraft:bypasses_shield": [
+    "#minecraft:bypasses_armor",
+    "minecraft:falling_anvil",
+    "minecraft:falling_stalactite"
+  ],
+  "minecraft:no_knockback": [
+    "minecraft:explosion",
+    "minecraft:player_explosion",
+    "minecraft:bad_respawn_point",
+    "minecraft:in_fire",
+    "minecraft:lightning_bolt",
+    "minecraft:on_fire",
+    "minecraft:lava",
+    "minecraft:hot_floor",
+    "minecraft:in_wall",
+    "minecraft:cramming",
+    "minecraft:drown",
+    "minecraft:starve",
+    "minecraft:cactus",
+    "minecraft:fall",
+    "minecraft:ender_pearl",
+    "minecraft:fly_into_wall",
+    "minecraft:out_of_world",
+    "minecraft:generic",
+    "minecraft:magic",
+    "minecraft:wither",
+    "minecraft:dragon_breath",
+    "minecraft:dry_out",
+    "minecraft:sweet_berry_bush",
+    "minecraft:freeze",
+    "minecraft:stalagmite",
+    "minecraft:outside_border",
+    "minecraft:generic_kill",
+    "minecraft:campfire"
+  ],
+  "minecraft:mace_smash": [
+    "minecraft:mace_smash"
+  ],
+  "minecraft:is_lightning": [
+    "minecraft:lightning_bolt"
+  ],
+  "minecraft:always_hurts_ender_dragons": [
+    "#minecraft:is_explosion"
+  ],
+  "minecraft:always_most_significant_fall": [
+    "minecraft:out_of_world"
+  ],
+  "minecraft:always_kills_armor_stands": [
+    "minecraft:arrow",
+    "minecraft:trident",
+    "minecraft:fireball",
+    "minecraft:wither_skull",
+    "minecraft:wind_charge"
+  ],
+  "minecraft:is_explosion": [
+    "minecraft:fireworks",
+    "minecraft:explosion",
+    "minecraft:player_explosion",
+    "minecraft:bad_respawn_point"
+  ],
+  "minecraft:always_triggers_silverfish": [
+    "minecraft:magic"
+  ],
+  "minecraft:bypasses_resistance": [
+    "minecraft:out_of_world",
+    "minecraft:generic_kill"
+  ],
+  "minecraft:no_anger": [
+    "minecraft:mob_attack_no_aggro"
+  ]
+}
