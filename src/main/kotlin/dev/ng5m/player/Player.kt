@@ -116,28 +116,30 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     private fun packDelta(d: Double): Double = round(d * 4096.0)
 
-    fun moveFrom(from: Location) {
-        previousLocation = from
-
-        val delta = location.xyz.clone() - from.xyz
+    fun move() {
+        val delta = location.xyz.clone() - previousLocation.xyz
 
         val specialDelta =
-            (location.xyz.clone().transform(this::packDelta) - (from.xyz.clone().transform(this::packDelta))).toShorts()
+            (location.xyz.clone().transform(this::packDelta) - (previousLocation.xyz.clone().transform(this::packDelta))).toShorts()
 
-        val rotation = (location.yaw - from.yaw) != 0.0F || (location.pitch - from.pitch) != 0.0F
+        val rotYaw = (location.yaw - previousLocation.yaw) != 0.0F
+        val rotPitch = (location.pitch - previousLocation.pitch) != 0.0F
 
         getOtherPlayers().forEach {
-            it.connection.sendPacket(
-                if (
-                    delta.x > 8 || delta.x < -7.999755859375 ||
-                    delta.y > 8 || delta.y < -7.999755859375 ||
-                    delta.z > 8 || delta.z < -7.999755859375
-                ) SyncEntityPositionS2CPacket(this)
-                else (if (rotation) MoveEntityPacket.PosRot(
+            if (delta.x > 8 || delta.x < -7.999755859375 ||
+                delta.y > 8 || delta.y < -7.999755859375 ||
+                delta.z > 8 || delta.z < -7.999755859375) {
+                it.connection.sendPacket(
+                    SyncEntityPositionS2CPacket(this)
+                )
+            } else {
+                it.connection.sendPacket(MoveEntityPacket.PosRot(
                     getEntityId(), specialDelta,
-                    location.yaw, location.pitch, onGround
-                ) else MoveEntityPacket.Pos(getEntityId(), specialDelta, onGround))
-            )
+                    headYaw, location.pitch, onGround
+                ))
+
+                if (rotYaw) it.connection.sendPacket(RotateHeadS2CPacket(this))
+            }
         }
 
         val playerChunkXZ = location.toChunk()

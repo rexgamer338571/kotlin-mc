@@ -48,7 +48,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     }
 
     fun addEntity(entity: Entity) {
-        MinecraftServer.getInstance().removeTickable(entity)
+        MinecraftServer.getInstance().removeTicking(entity)
         if (entity.getWorld() != null) entity.getWorld()!!.removeEntityRaw(entity)
 
         entity.setWorld(this)
@@ -58,7 +58,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
         }
 
         entities.add(entity)
-        MinecraftServer.getInstance().addTickable(entity)
+        MinecraftServer.getInstance().addTicking(entity)
     }
 
     fun generateChunkIfAbsent(x: Int, z: Int) {
@@ -78,6 +78,19 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
             override fun setBiomeAtCell(x: Int, y: Int, z: Int, biome: ResourceKey<Biome>) {
                 chunk.setBiomeAtCell(x, y, z, biome)
+            }
+
+            override fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {
+                chunk.setBlockStateAt(x, y, z, state)
+            }
+
+            override fun setBlockAt(
+                x: Int,
+                y: Int,
+                z: Int,
+                block: Key
+            ) {
+                setBlockStateAt(x, y, z, BlockState(block))
             }
         }
 
@@ -113,5 +126,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
             it.sendPacket(RemoveEntitiesS2CPacket(entity))
         }
     }
+
+    fun entities(): Set<Entity> = entities.toSet()
 
 }

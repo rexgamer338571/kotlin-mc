@@ -1,6 +1,6 @@
 package dev.ng5m
 
-fun interface Tickable {
+fun interface Ticking {
 
     fun tick();
 

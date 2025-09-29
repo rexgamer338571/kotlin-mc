@@ -2,12 +2,16 @@ package dev.ng5m.mcio
 
 import dev.ng5m.MinecraftServer
 import dev.ng5m.serialization.Packet
+import dev.ng5m.server.TCPServer
+import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 
 class MCHandler : ChannelInboundHandlerAdapter() {
+    private val server: TCPServer<Channel> = MinecraftServer.getInstance().getServer()
+
     override fun handlerRemoved(ctx: ChannelHandlerContext) {
-        val connection = MinecraftServer.getInstance().getOrRegisterConnection(ctx.channel())
+        val connection = server.getOrRegisterConnection(ctx.channel())
         connection.removePlayer()
     }
 
@@ -16,7 +20,7 @@ class MCHandler : ChannelInboundHandlerAdapter() {
 
         val packet: Packet = msg as Packet
 
-        val connection = MinecraftServer.getInstance().getOrRegisterConnection(ctx.channel())
+        val connection = server.getOrRegisterConnection(ctx.channel())
         val protocolState = connection.protocolState
 
         if (protocolState.shouldHandleImmediately(packet.javaClass))

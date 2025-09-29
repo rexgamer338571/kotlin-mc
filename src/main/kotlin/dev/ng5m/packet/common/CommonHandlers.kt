@@ -6,6 +6,8 @@ import dev.ng5m.util.PluginMessageManager
 object CommonHandlers {
 
     fun pluginMessage(connection: MinecraftConnection, packet: PluginMessagePacket) {
+        println("plugin message on ${packet.channel}")
+
         PluginMessageManager.fire(connection, packet.channel, packet.data)
     }
 

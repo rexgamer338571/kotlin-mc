@@ -27,6 +27,6 @@ class Location(var world: World, var xyz: Vector3d, var yaw: Float, var pitch: F
     }
 
     fun clone(): Location {
-        return Location(world, Vector3d(xyz.x, xyz.y, xyz.z), yaw, pitch)
+        return Location(world, xyz.clone(), yaw, pitch)
     }
 }

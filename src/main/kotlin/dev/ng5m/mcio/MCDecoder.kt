@@ -8,10 +8,13 @@ import dev.ng5m.packet.play.c2s.SetCreativeModeSlotC2SPacket
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
 import dev.ng5m.serialization.util.Util
+import dev.ng5m.server.NettyServer
+import dev.ng5m.server.TCPServer
 import dev.ng5m.util.NetworkFlow
 import dev.ng5m.util.decompressZL
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
+import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ReplayingDecoder
 import org.slf4j.Logger
@@ -21,6 +24,8 @@ class MCDecoder : ReplayingDecoder<MCDecoder.State>() {
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(MCDecoder::class.java)
     }
+
+    private val server: NettyServer = MinecraftServer.getInstance().getServer()
 
     private var tmp: ByteBuf? = null
 
@@ -37,7 +42,7 @@ class MCDecoder : ReplayingDecoder<MCDecoder.State>() {
         LOGGER.debug("Client disconnected, cleaning up")
         tmp?.release()
         tmp = null
-        MinecraftServer.getInstance().removeConnection(ctx.channel())
+        server.removeConnection(ctx.channel())
     }
 
     override fun decode(ctx: ChannelHandlerContext, buf: ByteBuf, out: MutableList<Any>) {
@@ -90,12 +95,10 @@ class MCDecoder : ReplayingDecoder<MCDecoder.State>() {
     }
 
     private fun parsePacket(buf: ByteBuf, ctx: ChannelHandlerContext, out: MutableList<Any>) {
-
         val readerIndex = buf.readerIndex()
 
         try {
-            val connection: MinecraftConnection =
-                MinecraftServer.getInstance().getOrRegisterConnection(ctx.channel())
+            val connection: MinecraftConnection = server.getOrRegisterConnection(ctx.channel())
 
             val compress = connection.compression != null
 

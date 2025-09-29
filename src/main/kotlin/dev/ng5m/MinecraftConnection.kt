@@ -1,11 +1,14 @@
 package dev.ng5m
 
+import dev.ng5m.event.EventManager
+import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.mcio.PacketCompression
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.configuration.s2c.FinishConfigurationS2CPacket
 import dev.ng5m.packet.configuration.s2c.RegistryDataS2CPacket
 import dev.ng5m.packet.configuration.s2c.UpdateTagsS2CPacket
 import dev.ng5m.packet.login.s2c.SetCompressionS2CPacket
+import dev.ng5m.packet.play.s2c.PlayerInfoRemoveS2CPacket
 import dev.ng5m.packet.play.s2c.PlayerPosS2CPacket
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Registry
@@ -13,12 +16,11 @@ import dev.ng5m.serialization.Packet
 import dev.ng5m.util.PacketSendContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.helpers.Util
 import java.util.LinkedList
 import java.util.Queue
 import java.util.function.BiConsumer
 
-abstract class MinecraftConnection : Tickable {
+abstract class MinecraftConnection : Ticking {
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(MinecraftConnection::class.java)
     }
@@ -113,6 +115,9 @@ abstract class MinecraftConnection : Tickable {
         if (::player.isInitialized) {
             MinecraftServer.getInstance().removeConnection(this)
             player.getWorld()?.removeEntity(player)
+            player.getOtherPlayers().forEach {
+                it.connection.sendPacket(PlayerInfoRemoveS2CPacket(player.getIdentity().getAdequateUUID()))
+            }
         }
     }
 
@@ -126,7 +131,9 @@ abstract class MinecraftConnection : Tickable {
         }
 
         while (queuedPackets.isNotEmpty()) {
-            internalSend(queuedPackets.poll())
+            val ctx = queuedPackets.poll()
+            internalSend(ctx)
+            EventManager.fire(S2CPacketEvent(this, ctx.packet))
         }
     }
 }

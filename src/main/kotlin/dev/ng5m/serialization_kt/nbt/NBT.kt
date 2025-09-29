@@ -40,8 +40,8 @@ object NBT {
     private val initialized = false
 
     internal val TAG_TYPE_CLASS_MAP = DoubleMap<Tag.TagType, KClass<out Any>>()
-    internal val TAG_TYPE_CODEC_MAP = mutableMapOf<Tag.TagType, Pair<Codec<out Tag<Any>>, Codec<out Tag<Any>>>>()
-    private val TYPE_ADAPTERS = mutableMapOf<KClass<out Any>, Transcoder<out Tag<Any>, Any>>()
+    internal val TAG_TYPE_CODEC_MAP = mutableMapOf<Tag.TagType, Pair<Codec<Tag>, Codec<Tag>>>()
+    private val TYPE_ADAPTERS = mutableMapOf<KClass<out Any>, Transcoder<Tag, Any>>()
 
     internal val TAG_TYPE_CODEC = Codec.BYTE.xmap(
         { s -> if (s < Tag.TagType.entries.size) Tag.TagType.entries[s.toInt()] else null },
@@ -51,48 +51,50 @@ object NBT {
     val NAMED_TAG_CODEC = codec(true)
     val UNNAMED_TAG_CODEC = codec(false)
 
-    private fun codec(named: Boolean): Codec<Tag<Any>> = Codec.of(
+    private fun codec(named: Boolean): Codec<Tag> = Codec.of(
         { readTag(it, named) },
         { buf, tag -> writeTag(buf, tag, named) }
     )
 
-    fun readTag(buf: ByteIO, named: Boolean): Tag<Any> {
+    fun readTag(buf: ByteIO, named: Boolean): Tag {
         val (nc, unc) = TAG_TYPE_CODEC_MAP[TAG_TYPE_CODEC.read(buf)]!!
 
         return (if (named) nc else unc).read(buf)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Tag<Any>> readTagT(buf: ByteIO, named: Boolean): T = readTag(buf, named) as T
+    fun <T : Tag> readTagT(buf: ByteIO, named: Boolean): T = readTag(buf, named) as T
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Tag<Any>> writeTag(buf: ByteIO, tag: T, named: Boolean) {
+    fun <T : Tag> writeTag(buf: ByteIO, tag: T, named: Boolean) {
         TAG_TYPE_CODEC.write(buf, tag.type())
         val (nc, unc) = TAG_TYPE_CODEC_MAP[tag.type()]!!
 
         ((if (named) nc else unc) as Codec<Any>).write(buf, tag)
     }
 
-    private inline fun <V, T : Tag<V>> namedTagCodec(
+    @Suppress("UNCHECKED_CAST")
+    private inline fun <V, T : Tag> namedTagCodec(
         valueCodec: Codec<V>,
         crossinline factory: (String, V) -> T
     ) = Codec.of(
         Codec.BEDROCK_STRING, { it.name },
-        valueCodec, { it.value },
+        valueCodec, { it.value as V },
         factory
     )
 
-    private fun <V, T : Tag<V>> unnamedTagCodec(
+    @Suppress("UNCHECKED_CAST")
+    private fun <V, T : Tag> unnamedTagCodec(
         valueCodec: Codec<V>,
         factory: (V) -> T
-    ) = valueCodec.xmap(factory, { it.value })
+    ) = valueCodec.xmap(factory) { it.value as V }
 
-    private fun <F, S> eitherCodec(): Transcoder<Tag<*>, Either<F, S>> {
-        return object : Transcoder<Tag<*>, Either<F, S>> {
-            override fun from(r: Either<F, S>): Tag<*> = toNBT(r.get())
+    private fun <F, S> eitherCodec(): Transcoder<Tag, Either<F, S>> {
+        return object : Transcoder<Tag, Either<F, S>> {
+            override fun from(r: Either<F, S>): Tag = toNBT(r.get())
 
             @Suppress("UNCHECKED_CAST")
-            override fun to(t: Tag<*>): Either<F, S> {
+            override fun to(t: Tag): Either<F, S> {
                 require(typeArguments != null) { "could not decode Either: no @TypeArguments" }
 
                 return if (TAG_TYPE_CLASS_MAP.getA(t.type())!!.isSubclassOf(typeArguments!!.value[0])) {
@@ -113,10 +115,10 @@ object NBT {
         TAG_TYPE_CODEC_MAP.clear()
 
         @Suppress("UNCHECKED_CAST")
-        TYPE_ADAPTERS[Either::class] = eitherCodec<Any, Any>() as Transcoder<Tag<Any>, Any>
+        TYPE_ADAPTERS[Either::class] = eitherCodec<Any, Any>() as Transcoder<Tag, Any>
     }
 
-    fun fromJSON(element: JsonElement): Tag<*>? {
+    fun fromJSON(element: JsonElement): Tag? {
         ensureInitialized()
 
         when {
@@ -139,6 +141,7 @@ object NBT {
                     else -> throw IllegalArgumentException("waa")
                 }
             }
+
             element.isJsonArray -> {
                 val array = element.asJsonArray
                 if (array.isEmpty) return ListTag(Tag.TagType.END, emptyList<Null>())
@@ -146,6 +149,7 @@ object NBT {
 
                 return ListTag(TAG_TYPE_CLASS_MAP.getB(tags.first()!!::class)!!, tags)
             }
+
             element.isJsonObject -> {
                 val o = element.asJsonObject
                 val ct = CompoundTag()
@@ -159,20 +163,16 @@ object NBT {
 
                 return ct
             }
+
             else -> throw IllegalArgumentException("waa")
         }
     }
 
-    fun <T : Any> fromNBT(tag: Tag<*>, type: KClass<T>): T? {
+    fun <T : Any> fromNBT(tag: Tag, type: KClass<T>): T? {
         ensureInitialized()
 
-        val typeAdapter = TYPE_ADAPTERS[type]
-        if (typeAdapter != null) {
-            return (typeAdapter to tag) as T?
-        }
-
         if (tag !is EndTag && tag !is CompoundTag) {
-            if (type != tag.value::class) {
+            if (!type.isSubclassOf(tag.value::class)) {
                 throw NBTConversionException("type does not match tag value type")
             }
 
@@ -184,6 +184,12 @@ object NBT {
 
         @Suppress("UNCHECKED_CAST")
         if (tag is CompoundTag) {
+            val typeAdapter = TYPE_ADAPTERS[type]
+            if (typeAdapter != null) {
+                @Suppress("UNCHECKED_CAST")
+                return (typeAdapter.to(tag)) as T?
+            }
+
             val ctor = ro.findDefaultConstructor()
             val instance = ctor.newInstance()
 
@@ -195,33 +201,23 @@ object NBT {
                 if (property.visibility != KVisibility.PUBLIC) continue
 
                 val mutableProperty = property as? KMutableProperty1<T, Any> ?: continue
-
-                var clazz: KClass<out Any>? = null
-                if (mutableProperty.returnType.jvmErasure == Either::class) {
-                    require(property.hasAnnotation<TypeArguments>()) { "Either with no @TypeArguments" }
-
-                    val typeArgs = property.findAnnotation<TypeArguments>()!!.value
-                    try {
-                        fromNBT(valueTag, typeArgs[0])
-                        clazz = typeArgs[0]
+                val value = (if (mutableProperty.returnType.jvmErasure == Either::class) {
+                    println(mutableProperty.returnType.arguments)
+                    val left = try {
+                        fromNBT(valueTag, mutableProperty.returnType.arguments.first().type!!.jvmErasure)
+                        true
                     } catch (x: Exception) {
-                        clazz = typeArgs[1]
-                    }
-                }
-
-                val propertyValue = when {
-                    valueTag is CompoundTag -> {
-                        fromNBT(valueTag, clazz ?: property.returnType.jvmErasure as KClass<Any>)
+                        false
                     }
 
-                    else -> {
-                        fromNBT(valueTag, clazz ?: valueTag.value::class as KClass<Any>)
-                    }
-                }
+                    val value = fromNBT(valueTag, (if (left) mutableProperty.returnType.arguments.first() else mutableProperty.returnType.arguments.last()).type!!.jvmErasure as KClass<T>)
+                    if (left) Either.ofFirstUnsafe(value) else Either.ofSecondUnsafe(value)
+                } else fromNBT(valueTag, mutableProperty.returnType.jvmErasure))
 
-                propertyValue?.let { value ->
-                    mutableProperty.set(instance, value)
-                }
+                println(value)
+//                propertyValue?.let { value ->
+//                    mutableProperty.set(instance, value)
+//                }
             }
 
             return instance
@@ -230,7 +226,7 @@ object NBT {
         return null
     }
 
-    fun <T> toNBT(instance: T): Tag<Any> {
+    fun <T> toNBT(instance: T): Tag {
         ensureInitialized()
 
         val tag = when (instance) {
@@ -248,14 +244,14 @@ object NBT {
             is List<*> -> {
                 val type = if (instance.isEmpty()) Tag.TagType.UNDEFINED
                 else if (instance.first() == null) Tag.TagType.UNDEFINED else TAG_TYPE_CLASS_MAP.getB(instance.first()!!::class)
-                val newList = mutableListOf<Tag<Any>>()
+                val newList = mutableListOf<Tag>()
                 for (o in instance) newList.add(toNBT(o))
 
                 ListTag(type!!, newList)
             }
 
             else -> {
-                var adapter: Transcoder<out Tag<Any>, Any>? = null
+                var adapter: Transcoder<Tag, Any>? = null
                 TYPE_ADAPTERS.forEach { (k, v) ->
                     if (k.isSubclassOf(instance!!::class)) adapter = v
                 }

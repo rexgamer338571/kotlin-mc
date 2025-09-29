@@ -120,9 +120,8 @@ class AnvilLoader(val rootWorldDir: Path) {
                     sectionMap[sectionY] = section
                 }
 
-                chunkMap[Vector2i(cx, cz)] = Chunk(cx, cz, dimensionType, object : ChunkSectionLoader {
-                    override fun get(y: Int): ChunkSection = sectionMap[y] ?: ChunkSection()
-                }, compound["heightmaps"])
+                chunkMap[Vector2i(cx, cz)] = Chunk(cx, cz, dimensionType,
+                    { y -> sectionMap[y] ?: ChunkSection() }, compound["heightmaps"])
             }
         }
 

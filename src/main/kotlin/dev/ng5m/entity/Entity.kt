@@ -1,6 +1,6 @@
 package dev.ng5m.entity
 
-import dev.ng5m.Tickable
+import dev.ng5m.Ticking
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.util.AABB
@@ -11,7 +11,7 @@ import dev.ng5m.world.World
 import java.util.UUID
 import kotlin.properties.Delegates
 
-open class Entity(private val type: EntityType) : Tickable {
+open class Entity(private val type: EntityType) : Ticking {
     companion object {
         @JvmStatic
         protected val ID_TRACKER: IntTracker = IntTracker()

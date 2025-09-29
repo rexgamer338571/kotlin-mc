@@ -27,46 +27,48 @@ object PlayC2SHandlers {
         if (!validateMove(connection)) return
 
         val player = connection.player
-        val prev = player.location.clone()
+        player.previousLocation = player.location.clone()
 
         player.location.xyz = packet.xyz
         player.onGround = packet.flags.onGround
         player.pushingAgainstWall = packet.flags.pushingAgainstWall
 
-        fireMove(player, prev, player.location)
+        fireMove(player)
     }
 
     fun movePosRot(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.PosRot) {
         if (!validateMove(connection)) return
 
         val player = connection.player
-        val prev = player.location
+        player.previousLocation = player.location.clone()
         player.location.xyz = packet.xyz
         player.location.yaw = packet.yaw
+        player.headYaw = packet.yaw
         player.location.pitch = packet.pitch
         player.onGround = packet.flags.onGround
         player.pushingAgainstWall = packet.flags.pushingAgainstWall
-        fireMove(player, prev, player.location)
+        fireMove(player)
     }
 
     fun moveRot(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.Rot) {
         if (!validateMove(connection)) return
 
         val player = connection.player
-        val prev = player.location
+        player.previousLocation = player.location.clone()
         player.location.yaw = packet.yaw
+        player.headYaw = packet.yaw
         player.location.pitch = packet.pitch
-        fireMove(player, prev, player.location)
+        fireMove(player)
     }
 
     fun moveStatus(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.Status) {
         if (!validateMove(connection)) return
 
         val player = connection.player
-        val prev = player.location
+        player.previousLocation = player.location.clone()
         player.onGround = packet.flags.onGround
         player.pushingAgainstWall = packet.flags.pushingAgainstWall
-        fireMove(player, prev, player.location)
+        fireMove(player)
     }
 
     fun playerCommand(connection: MinecraftConnection, packet: PlayerCommandC2SPacket) {
@@ -112,8 +114,8 @@ object PlayC2SHandlers {
         }
     }
 
-    private fun fireMove(player: Player, from: Location, to: Location) {
-        EventManager.fire(PlayerMoveEvent(player, from, to))
+    private fun fireMove(player: Player) {
+        EventManager.fire(PlayerMoveEvent(player, player.previousLocation, player.location))
     }
 
     private fun validateMove(connection: MinecraftConnection): Boolean = !connection.syncingPosition

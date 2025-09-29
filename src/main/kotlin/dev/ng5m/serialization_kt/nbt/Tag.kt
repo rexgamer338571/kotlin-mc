@@ -1,7 +1,7 @@
 package dev.ng5m.serialization_kt.nbt
 
-abstract class Tag<V>(val value: V, var name: String = "") {
-    constructor(name: String, value: V) : this(value, name)
+abstract class Tag(val value: Any, var name: String = "") {
+    constructor(name: String, value: Any) : this(value, name)
 
     abstract fun type(): TagType
 

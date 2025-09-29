@@ -1,41 +1,10 @@
 package dev.ng5m.entity.inventory
 
 import dev.ng5m.item.ItemStack
-import dev.ng5m.packet.play.s2c.SetContainerContentsS2CPacket
 import dev.ng5m.packet.play.s2c.SetContainerSlotS2CPacket
 import dev.ng5m.player.Player
-import dev.ng5m.util.IntTracker
 
-class PlayerInventory(val player: Player) : Inventory {
-    private val array: Array<ItemStack?> = Array(46) { null }
-    private val syncIdTracker = IntTracker()
-    private var active = false
-
-    var carriedItem: ItemStack? = ItemStack.AIR
-
-    override fun setItem(slot: Int, stack: ItemStack) {
-        array[slot] = stack
-
-        if (active)
-            player.connection.sendPacket(
-                SetContainerSlotS2CPacket(
-                    0, syncIdTracker.next(), slot.toShort(), stack
-                )
-            )
-    }
-
-    override fun getItem(slot: Int): ItemStack? = array[slot]
-
-    fun clearItem(slot: Int) {
-        array[slot] = null
-    }
-
-    override fun getContentsPacket(): SetContainerContentsS2CPacket {
-        return SetContainerContentsS2CPacket(
-            0, syncIdTracker.current(), array.map { it ?: ItemStack.AIR }, carriedItem ?: ItemStack.AIR
-        )
-    }
-
+class PlayerInventory(val player: Player) : ArrayBackedInventory(0) {
     fun craftingOutput(): ItemStack? = getItem(0)
     fun craftingOutput(stack: ItemStack) = setItem(0, stack)
 
@@ -63,8 +32,7 @@ class PlayerInventory(val player: Player) : Inventory {
     fun offhand(): ItemStack? = getItem(45)
     fun offhand(stack: ItemStack) = setItem(45, stack)
 
-    fun activate() {
-        active = true
+    override fun updateSlot(syncId: Int, slot: Short, itemStack: ItemStack) {
+        player.connection.sendPacket(SetContainerSlotS2CPacket(0, syncId, slot, itemStack))
     }
-
 }

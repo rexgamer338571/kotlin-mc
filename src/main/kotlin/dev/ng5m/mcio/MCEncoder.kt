@@ -8,9 +8,12 @@ import dev.ng5m.packet.play.s2c.*
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
 import dev.ng5m.serialization.util.Util
+import dev.ng5m.serialization.nbt.NBT
+import dev.ng5m.server.TCPServer
 import dev.ng5m.util.NetworkFlow
 import dev.ng5m.util.Task
 import io.netty.buffer.ByteBuf
+import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToByteEncoder
 import org.slf4j.Logger
@@ -23,12 +26,18 @@ class MCEncoder : MessageToByteEncoder<Packet>() {
         private val LOGGER: Logger = LoggerFactory.getLogger(MCEncoder::class.java)
     }
 
+    private val server: TCPServer<Channel> = MinecraftServer.getInstance().getServer()
+
     override fun encode(ctx: ChannelHandlerContext, packet: Packet, out: ByteBuf) {
-        val connection = MinecraftServer.getInstance().getOrRegisterConnection(ctx.channel())
+        val connection = server.getOrRegisterConnection(ctx.channel())
         val codec = Codec.codecFor(packet)
 
         codec ?: run {
             error("no codec found for ${packet.javaClass.simpleName}")
+        }
+
+        if (packet is TabListS2CPacket) {
+            println(NBT.toNBT(packet.footer))
         }
 
         val buf = ctx.alloc().buffer()

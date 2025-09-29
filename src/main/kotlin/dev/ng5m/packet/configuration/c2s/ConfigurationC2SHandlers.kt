@@ -59,6 +59,10 @@ object ConfigurationC2SHandlers {
                         player.getWorld()!!.addEntity(player)
                     }
                     MinecraftServer.getInstance().getPlayingConnections().forEach { it.sendPacket(infoPacket) }
+
+                    player.getWorld()!!.entities().forEach {
+                        connection.sendPacket(SpawnEntityS2CPacket(it))
+                    }
                 }
             }
 

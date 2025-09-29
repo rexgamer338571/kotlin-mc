@@ -1,4 +1,4 @@
-package dev.ng5m
+package dev.ng5m.data
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

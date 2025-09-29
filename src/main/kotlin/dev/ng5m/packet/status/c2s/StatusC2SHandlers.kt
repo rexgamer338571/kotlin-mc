@@ -8,7 +8,7 @@ import dev.ng5m.packet.status.s2c.StatusResponseS2CPacket
 object StatusC2SHandlers {
 
     fun statusRequest(connection: MinecraftConnection, packet: StatusRequestC2SPacket) {
-        connection.sendPacket(StatusResponseS2CPacket(MinecraftServer.getInstance().getStatusResponse()))
+        connection.sendPacket(StatusResponseS2CPacket(StatusRequestC2SPacket.getStatusResponse()))
     }
 
     fun pingRequest(connection: MinecraftConnection, packet: PingRequestC2SPacket) {

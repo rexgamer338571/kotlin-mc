@@ -1,13 +1,8 @@
 package dev.ng5m.world
 
-@FunctionalInterface
-interface ChunkSectionLoader {
+fun interface ChunkSectionLoader {
     companion object {
-        val DEFAULT = object : ChunkSectionLoader {
-            override fun get(y: Int): ChunkSection {
-                return ChunkSection()
-            }
-        }
+        val DEFAULT = ChunkSectionLoader { ChunkSection() }
     }
 
     fun get(y: Int): ChunkSection

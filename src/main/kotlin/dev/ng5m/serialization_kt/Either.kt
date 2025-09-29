@@ -4,10 +4,10 @@ data class Either<F, S>(val first: F?, val second: S?) {
     companion object {
         fun <F, S> ofFirst(first: F): Either<F, S> = Either(first, null)
         @Suppress("UNCHECKED_CAST")
-        fun <F, S> ofFirstUnsafe(first: Any): Either<F, S> = Either(first as F, null)
+        fun ofFirstUnsafe(first: Any?): Either<*, *> = Either(first, null)
         fun <F, S> ofSecond(second: S): Either<F, S> = Either(null, second)
         @Suppress("UNCHECKED_CAST")
-        fun <F, S> ofSecondUnsafe(second: Any): Either<F, S> = Either(null, second as S)
+        fun ofSecondUnsafe(second: Any?): Either<*, *> = Either(null, second)
     }
 
     fun isFirst(): Boolean = first != null
