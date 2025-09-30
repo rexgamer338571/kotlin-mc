@@ -6,6 +6,7 @@ import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.player.PlayerMoveEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.AnimateS2CPacket
+import dev.ng5m.player.ChatMode
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
 import dev.ng5m.world.Location
@@ -21,6 +22,14 @@ object PlayC2SHandlers {
 
         connection.syncingPosition = false
         connection.player.teleportIdTracker.finish(packet.teleportId)
+    }
+
+    fun chatMessage(connection: MinecraftConnection, packet: ChatMessageC2SPacket) {
+//        MinecraftServer.getInstance().getPlayingConnections()
+//            .filter { it.player.chatMode == ChatMode.ENABLED }
+//            .forEach {
+//
+//            }
     }
 
     fun movePos(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.Pos) {

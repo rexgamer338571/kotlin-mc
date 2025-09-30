@@ -1,10 +1,12 @@
 package dev.ng5m.world
 
+import dev.ng5m.Agent
 import dev.ng5m.MinecraftServer
 import dev.ng5m.block.BlockState
 import dev.ng5m.entity.Entity
 import dev.ng5m.packet.play.s2c.RemoveEntitiesS2CPacket
 import dev.ng5m.packet.play.s2c.SpawnEntityS2CPacket
+import dev.ng5m.packet.play.s2c.UnloadChunkS2CPacket
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionType
@@ -15,6 +17,7 @@ import dev.ng5m.world.GameRules.DO_IMMEDIATE_RESPAWN
 import dev.ng5m.world.GameRules.DO_LIMITED_CRAFTING
 import dev.ng5m.world.GameRules.REDUCED_DEBUG_INFO
 import net.kyori.adventure.key.Key
+import org.openjdk.jol.info.ClassLayout
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -27,7 +30,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     )
     private val entities: MutableSet<Entity> = mutableSetOf()
 
-    private val chunks: MutableMap<Vector2i, Chunk> = mutableMapOf()
+    private val chunks: MutableMap<Vector2i, Chunk?> = mutableMapOf()
     var chunkProvider: ChunkProvider = ChunkProvider.EMPTY
     var chunkGenerator: ChunkGenerator = ChunkGenerator.EMPTY
 
@@ -63,7 +66,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
     fun generateChunkIfAbsent(x: Int, z: Int) {
         val vec = Vector2i(x, z)
-        val chunk = chunks.computeIfAbsent(vec) { _ -> chunkProvider.get(this, x, z) }
+        val chunk = chunks.computeIfAbsent(vec) { _ -> chunkProvider.get(this, x, z) }!!
         val ctx = object : ChunkGenerationContext {
             override fun chunkX(): Int = x
             override fun chunkZ(): Int = z
@@ -92,6 +95,8 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
             ) {
                 setBlockStateAt(x, y, z, BlockState(block))
             }
+
+            override fun chunk(): Chunk = chunk
         }
 
         chunkGenerator.generate(ctx)
@@ -100,6 +105,15 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     fun generateIfAbsent(x: Int, z: Int): Chunk {
         generateChunkIfAbsent(x, z)
         return chunks[Vector2i(x, z)]!!
+    }
+
+    fun unloadChunk(x: Int, z: Int) {
+        entities
+            .filter { it is Player }
+            .map { it as Player }
+            .forEach { it.connection.sendPacket(UnloadChunkS2CPacket(x, z)) }
+
+        chunks[Vector2i(x, z)] = null
     }
 
     fun getHashedSeed(): Long {

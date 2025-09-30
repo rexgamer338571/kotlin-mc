@@ -36,6 +36,8 @@ open class Entity(private val type: EntityType) : Ticking {
     lateinit var previousLocation: Location
     var velocity = Vector3d.ZERO
 
+    var health: Double = 0.0
+
     var onGround: Boolean = true
     var pushingAgainstWall: Boolean = false
 

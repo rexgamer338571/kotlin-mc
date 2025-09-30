@@ -17,6 +17,7 @@ import net.kyori.adventure.text.Component
 import java.util.Optional
 import kotlin.math.min
 import kotlin.math.round
+import kotlin.properties.Delegates
 
 class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) {
     companion object {
@@ -43,8 +44,8 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
         }
 
     var simulationDistance: Int = MinecraftServer.getInstance().simulationDistance
-    private var chatMode: ChatMode = ChatMode.ENABLED;
-    private var chatColors: Boolean = true;
+    lateinit var chatMode: ChatMode
+    var chatColors by Delegates.notNull<Boolean>()
     private var displayedSkinParts: SkinParts = SkinParts()
     private var mainHand: Hand = Hand.RIGHT
     private var enableTextFiltering: Boolean = false
@@ -62,6 +63,10 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     var sprinting = false
     var sneaking = false
+
+    init {
+        health = 20.0
+    }
 
     fun applyClientInformation(packet: ClientInformationC2SPacket) {
         locale = packet.locale
@@ -109,7 +114,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
             }
         }
 
-        ctx!!.onFinish {
+        ctx?.onFinish {
             println("average: ${ChunkSection.totalTime / ChunkSection.times}ns")
         }
     }
@@ -164,15 +169,12 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
             }
         }
 
-        var ctx: PacketSendContext? = null
         for (pos in prev subtract current) {
-            ctx = connection.sendPacket(UnloadChunkS2CPacket(pos.x, pos.y))
+            getWorld()!!.unloadChunk(pos.x, pos.y)
         }
 
-        ctx!!.onFinish {
-            for (pos in current subtract prev) {
-                connection.sendPacket(ChunkS2CPacket(getWorld()!!.generateIfAbsent(pos.x, pos.y)))
-            }
+        for (pos in current subtract prev) {
+            connection.sendPacket(ChunkS2CPacket(getWorld()!!.generateIfAbsent(pos.x, pos.y)))
         }
     }
 

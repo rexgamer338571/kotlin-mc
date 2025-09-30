@@ -18,4 +18,6 @@ interface ChunkGenerationContext {
     fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState)
     fun setBlockAt(x: Int, y: Int, z: Int, block: Key)
 
+    fun chunk(): Chunk
+
 }

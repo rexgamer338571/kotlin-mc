@@ -29,6 +29,7 @@ dependencies {
     implementation("net.kyori:adventure-text-serializer-gson:4.24.0")
 
     implementation("de.articdive:jnoise-pipeline:4.1.0")
+    implementation("org.openjdk.jol:jol-core:0.10")
 
 }
 

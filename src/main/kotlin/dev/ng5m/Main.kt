@@ -6,6 +6,8 @@ import de.articdive.jnoise.pipeline.JNoise
 import dev.ng5m.block.BlockState
 import dev.ng5m.block.Blocks
 import dev.ng5m.block.Blocks.STONE
+import dev.ng5m.entity.BlockEntity
+import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.event.impl.player.PlayerJoinEvent
@@ -27,10 +29,13 @@ import dev.ng5m.serialization_kt.nbt.impl.CompoundTag
 import dev.ng5m.serialization_kt.nbt.impl.ListTag
 import dev.ng5m.serialization_kt.nbt.impl.StringTag
 import dev.ng5m.util.TypeArguments
+import dev.ng5m.util.math.Vector3i
 import dev.ng5m.world.*
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
+import org.openjdk.jol.info.ClassLayout
+import org.openjdk.jol.vm.VM
 import kotlin.random.Random
 
 
@@ -41,6 +46,11 @@ class A {
 
 fun main() {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
+
+//    limboServer()
+
+//    if (true) return
+
 
     val server = MinecraftServer()
 
@@ -65,6 +75,8 @@ fun main() {
 
     val world = server.createWorld(DimensionTypes.THE_NETHER, Key.key("test", "test"))
 
+    val tabList = TabList()
+
     val customBiome = Registries.BIOME.register(Key.key("test", "test_biome"), Biome().also { biome ->
         biome.effects = Biome.Effects().also { effects ->
             effects.music = listOf(Biome.Music().also { music ->
@@ -77,6 +89,7 @@ fun main() {
             })
         }
     })
+
 
     val random = Random(1)
     val noiseRandomChunkGenerator = object : ChunkGenerator {
@@ -108,6 +121,9 @@ fun main() {
                     }
                 }
             }
+
+            context.chunk().addBlockEntity(0, 50, 0,
+                BlockEntity(Vector3i(0, 50, 0), BlockEntityType.CHEST, dev.ng5m.serialization.nbt.impl.CompoundTag()))
         }
     }
 
@@ -150,24 +166,42 @@ fun main() {
         }
     }
 
+    var i = 0
+    EventManager.register(PlayerJoinEvent::class.java) {
+        tabList.setPlayerIndex(it.player.getIdentity().getAdequateUUID(), 20 * i++)
+    }
+
     EventManager.register(S2CPacketEvent::class.java) {
         if (it.connection.protocolState != ProtocolState.PLAY) return@register
         if (!it.connection.protocolState.shouldLog(it.packet::class.java)) return@register
 
-        it.connection.sendPacket(
-            TabListS2CPacket.footer(
-                Component.text("S -> C ").color(NamedTextColor.DARK_AQUA)
+        tabList.footer = Component.text("S -> C ").color(NamedTextColor.DARK_AQUA)
+            .append(
+                Component.text("${it.packet::class.simpleName}").color(NamedTextColor.AQUA)
                     .append(
-                        Component.text("${it.packet::class.simpleName}").color(NamedTextColor.AQUA)
+                        Component.newline()
                             .append(
-                                Component.newline()
-                                    .append(
-                                        Component.text(ServerPerformanceMonitor.toString()).color(NamedTextColor.GRAY)
-                                    )
+                                Component.text(ServerPerformanceMonitor.toString()).color(NamedTextColor.GRAY)
                             )
                     )
             )
-        )
+
+        tabList.update(it.connection)
+    }
+
+    server.run(25565)
+}
+
+fun limboServer() {
+    val server = MinecraftServer()
+    server.serverViewDistance = 2
+
+    val world = server.createWorld(DimensionTypes.THE_END, Key.key("limbo"))
+
+    EventManager.register(PlayerPreJoinEvent::class.java) {
+        it.player.setWorld(world)
+        it.player.location = Location(world, Double.MAX_VALUE, Double.MAX_VALUE, 0.0)
+        it.player.gameMode = GameMode.ADVENTURE
     }
 
     server.run(25565)

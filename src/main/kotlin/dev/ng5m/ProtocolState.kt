@@ -95,6 +95,7 @@ class ProtocolState {
 //            strictErrorHandling(true)
 
             register(AcceptTeleportationC2SPacket::class).handler(PlayC2SHandlers::acceptTeleportation)
+            register(0x07, ChatMessageC2SPacket::class).handler(PlayC2SHandlers::chatMessage)
             register(0x0B, ClientEndTickC2SPacket::class).excludeFromLogging()
             register(0x14, PluginMessagePacket::class).immediateHandling().handler(CommonHandlers::pluginMessage)
             register(0x1C, PlayerMoveC2SPacket.Pos::class).excludeFromLogging().handler(PlayC2SHandlers::movePos)
@@ -124,7 +125,7 @@ class ProtocolState {
             register(0x30, MoveEntityPacket.PosRot::class).excludeFromLogging()
             register(0x3A, PlayerAbilitiesS2CPacket::class)
             register(0x3F, PlayerInfoRemoveS2CPacket::class)
-            register(0x40, PlayerInfoUpdateS2CPacket::class)
+            register(0x40, PlayerInfoUpdateS2CPacket::class).excludeFromLogging()
             register(0x42, PlayerPosS2CPacket::class)
             register(0x43, PlayerRotationS2CPacket::class)
             register(0x47, RemoveEntitiesS2CPacket::class)

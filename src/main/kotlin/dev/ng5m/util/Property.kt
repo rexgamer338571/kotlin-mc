@@ -11,7 +11,7 @@ data class Property(
         val CODEC: Codec<Property> = Codec.of(
             Codec.STRING, Property::name,
             Codec.STRING, Property::value,
-            nullable(Codec.STRING), Property::signature,
+            Codec.STRING.nullable(), Property::signature,
             ::Property
         )
     }

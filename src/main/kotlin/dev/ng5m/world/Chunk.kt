@@ -54,6 +54,10 @@ class Chunk(
         }
     }
 
+    fun addBlockEntity(x: Int, y: Int, z: Int, blockEntity: BlockEntity) {
+        blockEntities[Vector3i(x, y, z)] = blockEntity
+    }
+
     fun getBlockIdAt(x: Int, y: Int, z: Int): Int {
         val section: ChunkSection = sections[getSectionY(y)] ?: return -1
 
