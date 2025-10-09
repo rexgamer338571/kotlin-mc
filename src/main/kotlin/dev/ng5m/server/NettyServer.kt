@@ -18,6 +18,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 
 class NettyServer : TCPServer<Channel>(::NettyConnection) {
     private lateinit var shutdown: () -> Unit
+    private var running = false
 
     override fun start(port: Int) {
         val factory = NioIoHandler.newFactory()
@@ -50,6 +51,7 @@ class NettyServer : TCPServer<Channel>(::NettyConnection) {
 
             val future: ChannelFuture = bootstrap.bind(port).sync()
             future.channel().closeFuture().sync()
+            running = true
         } catch (x: Exception) {
             throw RuntimeException(x)
         } finally {
@@ -58,7 +60,10 @@ class NettyServer : TCPServer<Channel>(::NettyConnection) {
     }
 
     override fun stop() {
-        shutdown()
+        if (running) {
+            shutdown()
+            running = false
+        }
     }
 
     override fun getOrRegisterConnection(key: Channel): MinecraftConnection {

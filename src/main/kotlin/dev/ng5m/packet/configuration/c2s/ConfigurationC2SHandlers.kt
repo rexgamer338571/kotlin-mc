@@ -24,8 +24,6 @@ object ConfigurationC2SHandlers {
         EventManager.fire(PlayerPreJoinEvent(player))
 
         connection.sendPacket(JoinS2CPacket(player)).onFinish {
-            require(player.getWorld() != null)
-
             val map = mutableMapOf<UUID, Set<PlayerInfoUpdateS2CPacket.PlayerAction>>()
             MinecraftServer.getInstance().getPlayers().forEach {
                 val set = mutableSetOf(
@@ -56,18 +54,21 @@ object ConfigurationC2SHandlers {
                     }
 
                     connection.sendPacket(infoPacket).onFinish {
-                        player.getWorld()!!.addEntity(player)
+                        player.getWorld().addEntity(player)
                     }
                     MinecraftServer.getInstance().getPlayingConnections().forEach { it.sendPacket(infoPacket) }
 
-                    player.getWorld()!!.entities().forEach {
+                    player.getWorld().entities().forEach {
                         connection.sendPacket(SpawnEntityS2CPacket(it))
                     }
                 }
             }
 
-            connection.sendPacket(player.inventory.getContentsPacket())
-            player.inventory.activate()
+            connection.sendPacket(SetHeldSlotS2CPacket(player.heldItem))
+            connection.sendPacket(SetContainerContentsS2CPacket(
+                player.inventory.id, player.inventory.revision(),
+                player.inventory.slots(), player.carriedItem
+            ))
             EventManager.fire(PlayerJoinEvent(player))
         }
     }

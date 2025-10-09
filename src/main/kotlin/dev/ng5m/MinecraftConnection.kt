@@ -71,7 +71,7 @@ abstract class MinecraftConnection : Ticking {
     fun synchronizeRegistries(): PacketSendContext {
         expectConfiguration()
 
-        val registries = Registry.getAllRegistries().filter { it.dataDriven }
+        val registries = Registry.getAllRegistries().filter { it.synced }
         require(registries.isNotEmpty()) { "Registries were not properly initialized" }
 
         var ctx: PacketSendContext? = null
@@ -114,7 +114,7 @@ abstract class MinecraftConnection : Ticking {
         close()
         if (::player.isInitialized) {
             MinecraftServer.getInstance().removeConnection(this)
-            player.getWorld()?.removeEntity(player)
+            player.getWorld().removeEntity(player)
             player.getOtherPlayers().forEach {
                 it.connection.sendPacket(PlayerInfoRemoveS2CPacket(player.getIdentity().getAdequateUUID()))
             }

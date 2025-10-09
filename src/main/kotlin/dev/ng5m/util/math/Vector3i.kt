@@ -12,6 +12,16 @@ class Vector3i(var x: Int, var y: Int, var z: Int) {
             Codec.INTEGER, { it.z },
             ::Vector3i
         )
+
+        val POSITION: Codec<Vector3i> = Codec.of(
+            { buf ->
+                val l = buf.readLong()
+                Vector3i((l shr 38).toInt(), (l shl 52 shr 52).toInt(), (l shl 26 shr 38).toInt())
+            },
+            { buf, vec ->
+                buf.writeLong(((vec.x.toLong() and 0x3FFFFFFL) shl 38) or ((vec.z.toLong() and 0x3FFFFFFL) shl 12) or (vec.y.toLong() and 0xFFFL))
+            }
+        )
     }
 
     override fun toString(): String {

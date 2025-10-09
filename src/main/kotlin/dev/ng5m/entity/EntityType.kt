@@ -7,6 +7,7 @@ import net.kyori.adventure.key.Key
 
 data class EntityType(
     val boundingBox: AABB,
+    val defaultHealth: Double,
     val factory: (EntityType) -> Entity
 ) {
     companion object {
@@ -744,7 +745,7 @@ data class EntityType(
 
         val PLAYER = ENTITY_TYPE.register(
             Key.key("player"),
-            Builder().factory { Player() }.build()
+            Builder().defaultHealth(20.0).factory { Player() }.build()
         )
 
         val FISHING_BOBBER = ENTITY_TYPE.register(
@@ -757,6 +758,7 @@ data class EntityType(
 
     class Builder() {
         private var boundingBox: AABB = AABB()
+        private var defaultHealth: Double = 0.0
         private var factory: (EntityType) -> Entity = { Entity(it) }
 
         fun dimensions(width: Double, height: Double): Builder {
@@ -769,6 +771,11 @@ data class EntityType(
             return this
         }
 
+        fun defaultHealth(defaultHealth: Double): Builder {
+            this.defaultHealth = defaultHealth
+            return this
+        }
+
         fun factory(factory: (EntityType) -> Entity): Builder {
             this.factory = factory
             return this
@@ -777,6 +784,7 @@ data class EntityType(
         fun build(): EntityType {
             return EntityType(
                 boundingBox,
+                defaultHealth,
                 factory
             )
         }

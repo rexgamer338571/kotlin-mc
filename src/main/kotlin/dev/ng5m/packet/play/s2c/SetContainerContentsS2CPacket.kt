@@ -1,5 +1,6 @@
 package dev.ng5m.packet.play.s2c
 
+import dev.ng5m.entity.inventory.Inventory
 import dev.ng5m.item.ItemStack
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet

@@ -6,10 +6,8 @@ import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.player.PlayerMoveEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.AnimateS2CPacket
-import dev.ng5m.player.ChatMode
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
-import dev.ng5m.world.Location
 import net.kyori.adventure.text.Component
 
 object PlayC2SHandlers {
@@ -30,6 +28,114 @@ object PlayC2SHandlers {
 //            .forEach {
 //
 //            }
+    }
+
+    fun containerClick(connection: MinecraftConnection, packet: ContainerClickC2SPacket) {
+        if (packet.windowId == 0 && connection.player.openInventory != null) return
+        if (packet.windowId != 0 && packet.windowId != connection.player.openInventory!!.id()) return
+
+        val player = connection.player
+        val inv = player.openInventory ?: player.inventory
+
+//        if (inv.revision() != packet.revision) {
+//            connection.sendPacket(
+//                SetContainerContentsS2CPacket(
+//                    inv.id(), inv.revision(), inv.slots(), player.carriedItem
+//                )
+//            )
+//
+//            return
+//        }
+
+
+        val updatedSlots = mutableMapOf<Int, ItemStack>()
+
+        fun getItem(slot: Int): ItemStack {
+            return (
+                    if (player.openInventory == null)
+                        player.inventory.getItem(slot)
+                    else
+                        if (slot >= player.openInventory!!.slots().size)
+                            player.inventory.getItem(slot - player.openInventory!!.slots().size + 9)
+                        else
+                            player.openInventory!!.getItem(slot)
+                    )
+        }
+
+        fun setItem(slot: Int, stack: ItemStack) {
+            if (player.openInventory == null)
+                player.inventory.setItem(slot, stack)
+            else
+                if (slot >= player.openInventory!!.slots().size)
+                    player.inventory.setItem(slot - player.openInventory!!.slots().size + 9, stack)
+                else
+                    player.openInventory!!.setItem(slot, stack)
+
+            updatedSlots[slot] = stack
+        }
+
+        val slot = packet.slot.toInt()
+        val button = packet.button.toInt()
+        when (packet.mode) {
+            0 -> {
+                if (slot == -999) {
+                    if (player.carriedItem == ItemStack.AIR) return
+
+                    when (button) {
+                        0 -> {
+                            player.dropItem(player.carriedItem)
+                            player.carriedItem = ItemStack.AIR
+                        }
+
+                        1 -> player.carriedItem.withCount(player.carriedItem.count() - 1)
+                    }
+                } else {
+                    when (button) {
+                        0 -> {
+                            val itemAt = getItem(slot)
+                            if (!(player.carriedItem == ItemStack.AIR && itemAt == ItemStack.AIR)) {
+                                if (player.carriedItem == ItemStack.AIR) {
+                                    player.carriedItem = itemAt
+                                    setItem(slot, ItemStack.AIR)
+                                } else {
+                                    if (itemAt == ItemStack.AIR) {
+                                        setItem(slot, player.carriedItem)
+                                        player.carriedItem = ItemStack.AIR
+                                    } else {
+                                        if (itemAt.isSimilar(player.carriedItem)) {
+                                            if (itemAt.count() < itemAt.maxStackSize()) {
+                                                val left = player.carriedItem.count() - (itemAt.maxStackSize() - itemAt.count())
+                                                itemAt.withCount(if (left <= 0) player.carriedItem.count() + itemAt.count() else itemAt.maxStackSize())
+                                                player.carriedItem.withCount(left)
+                                            }
+                                        } else {
+                                            val tmp = player.carriedItem.clone()
+                                            player.carriedItem = itemAt
+                                            setItem(slot, tmp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        MinecraftServer.getInstance().getPlayers()
+            .filter { it.openInventory == inv }
+            .forEach { player ->
+                updatedSlots.forEach {
+                    player.updateSlot(inv, it.key.toShort(), it.value)
+                }
+            }
+
+        player.updateCarriedItem()
+        inv.incrementRevision()
+    }
+
+    fun containerClose(connection: MinecraftConnection, packet: ContainerCloseC2SPacket) {
+        connection.player.openInventory = null
     }
 
     fun movePos(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.Pos) {
@@ -80,6 +186,17 @@ object PlayC2SHandlers {
         fireMove(player)
     }
 
+    fun playerAction(connection: MinecraftConnection, packet: PlayerActionC2SPacket) {
+        val player = connection.player
+
+        when (packet.action) {
+            PlayerActionC2SPacket.Action.DROP_ITEM -> player.dropHeldItem(false)
+            PlayerActionC2SPacket.Action.DROP_ITEM_STACK -> player.dropHeldItem(true)
+
+            else -> {}
+        }
+    }
+
     fun playerCommand(connection: MinecraftConnection, packet: PlayerCommandC2SPacket) {
         val player = connection.player
         if (packet.action == PlayerCommandC2SPacket.Action.START_SPRINTING) player.sprinting = true
@@ -94,23 +211,30 @@ object PlayC2SHandlers {
         println("loaded!! woa!")
     }
 
+    fun setCarriedItem(connection: MinecraftConnection, packet: SetCarriedItemC2SPacket) {
+        connection.player.heldItem = packet.slot.toInt()
+    }
+
     fun setCreativeModeSlot(connection: MinecraftConnection, packet: SetCreativeModeSlotC2SPacket) {
         val slot = packet.slot.toInt()
-        val inv = connection.player.inventory
+        val player = connection.player
+        val inv = player.inventory
 
         if (slot == -1) {
-            // TODO drop item
-
-            return
-        }
-
-        if (packet.itemStack == ItemStack.UNDEFINED) {
-            inv.carriedItem = inv.getItem(slot)
-            inv.clearItem(slot)
+            player.dropItem(player.carriedItem)
+            player.carriedItem = ItemStack.AIR
         } else {
-            inv.carriedItem = null
-            inv.setItem(slot, packet.itemStack)
+            if (packet.itemStack == ItemStack.UNDEFINED) {
+                player.carriedItem = inv.getItem(slot)
+                inv.clearItem(slot)
+            } else {
+                player.carriedItem = ItemStack.AIR
+                inv.setItem(slot, packet.itemStack)
+                connection.player.updateSlot(connection.player.inventory, packet.slot, packet.itemStack)
+            }
         }
+
+        player.updateCarriedItem()
     }
 
     fun swingArm(connection: MinecraftConnection, packet: SwingArmC2SPacket) {
@@ -121,6 +245,13 @@ object PlayC2SHandlers {
         connection.player.getOtherPlayers().forEach {
             it.connection.sendPacket(AnimateS2CPacket(connection.player, animation))
         }
+    }
+
+    fun useItemOn(connection: MinecraftConnection, packet: UseItemOnC2SPacket) {
+        val world = connection.player.getWorld()
+        val block = world.getBlockAt(packet.blockPos)
+
+        block?.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos)
     }
 
     private fun fireMove(player: Player) {

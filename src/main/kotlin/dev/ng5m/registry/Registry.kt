@@ -12,7 +12,7 @@ import java.util.Optional
 open class Registry<T : Any>(
     val id: Key,
     val entryClass: Class<T>,
-    val dataDriven: Boolean
+    val synced: Boolean
 ) {
     companion object {
         val DATA_PATH: Path = Path.of("data")
@@ -104,6 +104,10 @@ open class Registry<T : Any>(
 
     fun keyById(id: Int): ResourceKey<T> {
         return resourceKeyByKey(map.getB(byRawId.getA(id)))
+    }
+
+    fun keyByValue(t: T): Key {
+        return resourceKeyByValue(t).key
     }
 
     operator fun get(key: ResourceKey<T>): T? {

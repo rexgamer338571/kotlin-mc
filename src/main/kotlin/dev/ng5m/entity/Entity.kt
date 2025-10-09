@@ -1,6 +1,8 @@
 package dev.ng5m.entity
 
 import dev.ng5m.Ticking
+import dev.ng5m.packet.play.s2c.SpawnEntityS2CPacket
+import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.util.AABB
@@ -27,7 +29,7 @@ open class Entity(private val type: EntityType) : Ticking {
 
     private var id by Delegates.notNull<Int>()
     val uuid: UUID = UUID.randomUUID()
-    private var world: World? = null
+    private lateinit var world: World
 
     val portalCooldown = 0
     private var age: Int = 0
@@ -36,7 +38,7 @@ open class Entity(private val type: EntityType) : Ticking {
     lateinit var previousLocation: Location
     var velocity = Vector3d.ZERO
 
-    var health: Double = 0.0
+    var health: Double = type.defaultHealth
 
     var onGround: Boolean = true
     var pushingAgainstWall: Boolean = false
@@ -50,9 +52,8 @@ open class Entity(private val type: EntityType) : Ticking {
         this.world = world
     }
 
-    fun getWorld(): World? {
-        return world
-    }
+    fun getWorld(): World = world
+    fun isSpawned(): Boolean = ::world.isInitialized
 
     fun getEntityId(): Int {
         return id
@@ -60,6 +61,10 @@ open class Entity(private val type: EntityType) : Ticking {
 
     fun typeKey(): ResourceKey<EntityType> {
         return Registries.ENTITY_TYPE.resourceKeyByValue(type)
+    }
+
+    open fun spawnForPlayer(player: Player) {
+        player.connection.sendPacket(SpawnEntityS2CPacket(this))
     }
 
     open fun getEntityData(): Int = 0

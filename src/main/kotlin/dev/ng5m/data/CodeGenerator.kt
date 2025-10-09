@@ -49,12 +49,13 @@ private fun generateBlocksCode() {
 
     val sb: StringBuilder = StringBuilder("package dev.ng5m.block\n\n")
 
+        .append("import dev.ng5m.registry.Registries\n")
         .append("import net.kyori.adventure.key.Key\n\n")
 
         .append("object Blocks {\n")
 
     for (entry in array) {
-        sb.append("    val ${entry.value().uppercase()}: Key = Key.key(\"${entry.asString()}\")\n\n")
+        sb.append("    val ${entry.value().uppercase()} = register(Key.key(\"${entry.asString()}\"))\n\n")
     }
 
     sb.append("}")
@@ -66,7 +67,7 @@ internal fun generateItemCode() {
     Registries.init()
 
     val path: Path = Path.of("/home/ng5m/paper-1.21.4/generated/reports/registries.json")
-    val outPath: Path = Path.of("/home/ng5m/IdeaProjects/kt-test/src/main/kotlin/dev/ng5m/Items.kt")
+    val outPath: Path = Path.of("/home/ng5m/IdeaProjects/kt-test/src/main/kotlin/dev/ng5m/item/Items.kt")
 
     val obj: JsonObject = JsonParser.parseString(Files.readString(path)).asJsonObject
     val block: JsonObject = obj.getAsJsonObject("minecraft:item")
@@ -80,7 +81,7 @@ internal fun generateItemCode() {
 
     val array: Array<Key> = Array(map.keys.max()) { map[it]!! }
 
-    val sb: StringBuilder = StringBuilder("package dev.ng5m\n\n")
+    val sb: StringBuilder = StringBuilder("package dev.ng5m.item\n\n")
 
         .append("import net.kyori.adventure.key.Key\n")
         .append("import dev.ng5m.item.Item\n")
@@ -89,7 +90,8 @@ internal fun generateItemCode() {
         .append("object Items {\n")
 
     for (entry in array) {
-        sb.append("    val ${entry.value().uppercase()}: ResourceKey<Item> = Registries.ITEM.register(Key.key(\"${entry.asString()}\"), Item())\n\n")
+        val keyString = "Key.key(\"${entry.asString()}\""
+        sb.append("    val ${entry.value().uppercase()}: ResourceKey<Item> = Registries.ITEM.register($keyString), Item($keyString)))\n\n")
     }
 
     sb.append("}")
@@ -122,4 +124,8 @@ private fun generateCode() {
 
         println(registry.entryClass.simpleName + "s.populate()")
     }
+}
+
+fun main() {
+    generateItemCode()
 }

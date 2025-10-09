@@ -2,6 +2,7 @@ package dev.ng5m
 
 import dev.ng5m.packet.common.CommonHandlers
 import dev.ng5m.packet.common.PluginMessagePacket
+import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.configuration.c2s.AckFinishConfigurationC2SPacket
 import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
@@ -97,17 +98,22 @@ class ProtocolState {
             register(AcceptTeleportationC2SPacket::class).handler(PlayC2SHandlers::acceptTeleportation)
             register(0x07, ChatMessageC2SPacket::class).handler(PlayC2SHandlers::chatMessage)
             register(0x0B, ClientEndTickC2SPacket::class).excludeFromLogging()
+            register(0x10, ContainerClickC2SPacket::class).handler(PlayC2SHandlers::containerClick)
+            register(0x11, ContainerCloseC2SPacket::class).handler(PlayC2SHandlers::containerClose)
             register(0x14, PluginMessagePacket::class).immediateHandling().handler(CommonHandlers::pluginMessage)
             register(0x1C, PlayerMoveC2SPacket.Pos::class).excludeFromLogging().handler(PlayC2SHandlers::movePos)
             register(0x1D, PlayerMoveC2SPacket.PosRot::class).excludeFromLogging().handler(PlayC2SHandlers::movePosRot)
             register(0x1E, PlayerMoveC2SPacket.Rot::class).excludeFromLogging().handler(PlayC2SHandlers::moveRot)
             register(0x1F, PlayerMoveC2SPacket.Status::class).excludeFromLogging().handler(PlayC2SHandlers::moveStatus)
             register(0x26, PlayerAbilitiesC2SPacket::class)
+            register(0x27, PlayerActionC2SPacket::class).handler(PlayC2SHandlers::playerAction)
             register(0x28, PlayerCommandC2SPacket::class).handler(PlayC2SHandlers::playerCommand)
             register(0x29, PlayerInputC2SPacket::class).handler(PlayC2SHandlers::input)
             register(0x2A, PlayerLoadedC2SPacket::class).handler(PlayC2SHandlers::loaded)
+            register(0x33, SetCarriedItemC2SPacket::class).handler(PlayC2SHandlers::setCarriedItem)
             register(0x36, SetCreativeModeSlotC2SPacket::class).excludeFromLogging().handler(PlayC2SHandlers::setCreativeModeSlot)
             register(0x3A, SwingArmC2SPacket::class).handler(PlayC2SHandlers::swingArm)
+            register(0x3C, UseItemOnC2SPacket::class).handler(PlayC2SHandlers::useItemOn)
 
             switchFlow()
 
@@ -116,6 +122,7 @@ class ProtocolState {
             register(0x13, SetContainerContentsS2CPacket::class)
             register(0x15, SetContainerSlotS2CPacket::class).excludeFromLogging()
             register(0x19, PluginMessagePacket::class)
+            register(0x1D, DisconnectS2CPacket::class)
             register(0x20, SyncEntityPositionS2CPacket::class)
             register(0x22, UnloadChunkS2CPacket::class).excludeFromLogging()
             register(0x23, GameEventS2CPacket::class)
@@ -123,6 +130,7 @@ class ProtocolState {
             register(0x2C, JoinS2CPacket::class)
             register(0x2F, MoveEntityPacket.Pos::class).excludeFromLogging()
             register(0x30, MoveEntityPacket.PosRot::class).excludeFromLogging()
+            register(0x35, OpenScreenS2CPacket::class)
             register(0x3A, PlayerAbilitiesS2CPacket::class)
             register(0x3F, PlayerInfoRemoveS2CPacket::class)
             register(0x40, PlayerInfoUpdateS2CPacket::class).excludeFromLogging()
@@ -131,6 +139,10 @@ class ProtocolState {
             register(0x47, RemoveEntitiesS2CPacket::class)
             register(0x4D, RotateHeadS2CPacket::class)
             register(0x58, SetCenterChunkS2CPacket::class)
+            register(0x5A, SetCursorItemS2CPacket::class)
+            register(0x5D, SetEntityDataS2CPacket::class)
+            register(0x63, SetHeldSlotS2CPacket::class)
+            register(0x73, SystemChatS2CPacket::class)
             register(0x74, TabListS2CPacket::class).excludeFromLogging()
         }
 
@@ -235,7 +247,13 @@ class ProtocolState {
     }
 
     fun <T : Packet> idForType(flow: NetworkFlow, clazz: Class<T>): Int {
-        return packetIdToTypeDoubleMap[flow]!!.getB(clazz)
+        val v = packetIdToTypeDoubleMap[flow]!!.getB(clazz)
+        if (v == null) {
+            LOGGER.error("Type ${clazz.simpleName} not registered in flow $flow")
+            return -1
+        }
+
+        return v
     }
 
     @Suppress("UNCHECKED_CAST")

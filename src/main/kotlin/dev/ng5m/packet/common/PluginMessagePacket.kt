@@ -13,18 +13,20 @@ data class PluginMessagePacket(
     val data: ByteArray
 ) : Packet {
     companion object {
+        private val RESULT_KEY_PLUGIN_MESSAGE_CHANNEL = Object()
+
         val CODEC: Codec<PluginMessagePacket> = Codec.of(
-            Codec.KEY, PluginMessagePacket::channel,
+            Codec.KEY.storeResult(RESULT_KEY_PLUGIN_MESSAGE_CHANNEL), PluginMessagePacket::channel,
             Codec.of(
                 { buf ->
-                    val channel = Util.lastOfCodecRead as Key
+                    val channel = Codec.RESULTS[RESULT_KEY_PLUGIN_MESSAGE_CHANNEL] as Key
                     val specialCodec: Codec<ByteArray> = or(PluginMessageManager.codecFor(channel),
                         Codec.REMAINING)!!
 
                     return@of specialCodec.read(buf)
                 },
                 { buf, arr ->
-                    val channel = Util.lastOfCodecWrite as Key;
+                    val channel = Codec.RESULTS[RESULT_KEY_PLUGIN_MESSAGE_CHANNEL] as Key;
                     val specialCodec: Codec<ByteArray> = or(PluginMessageManager.codecFor(channel),
                         Codec.REMAINING)!!
 

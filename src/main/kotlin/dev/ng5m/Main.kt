@@ -5,7 +5,6 @@ import de.articdive.jnoise.generators.noise_parameters.fade_functions.FadeFuncti
 import de.articdive.jnoise.pipeline.JNoise
 import dev.ng5m.block.BlockState
 import dev.ng5m.block.Blocks
-import dev.ng5m.block.Blocks.STONE
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.event.EventManager
@@ -14,28 +13,21 @@ import dev.ng5m.event.impl.player.PlayerJoinEvent
 import dev.ng5m.event.impl.player.PlayerPreJoinEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.item.Items
-import dev.ng5m.item.component.ItemComponentTypes
-import dev.ng5m.packet.play.s2c.TabListS2CPacket
 import dev.ng5m.player.GameMode
 import dev.ng5m.registry.Biome
-import dev.ng5m.registry.Biomes
 import dev.ng5m.registry.DimensionTypes
 import dev.ng5m.registry.Registries
-import dev.ng5m.serialization_kt.Codec
 import dev.ng5m.serialization_kt.Either
-import dev.ng5m.serialization_kt.nbt.NBT
-import dev.ng5m.serialization_kt.nbt.Tag
 import dev.ng5m.serialization_kt.nbt.impl.CompoundTag
-import dev.ng5m.serialization_kt.nbt.impl.ListTag
-import dev.ng5m.serialization_kt.nbt.impl.StringTag
 import dev.ng5m.util.TypeArguments
 import dev.ng5m.util.math.Vector3i
 import dev.ng5m.world.*
+import dev.ng5m.world.anvil.AnvilLoader
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import org.openjdk.jol.info.ClassLayout
-import org.openjdk.jol.vm.VM
+import java.nio.file.Path
+import kotlin.io.path.Path
 import kotlin.random.Random
 
 
@@ -46,6 +38,12 @@ class A {
 
 fun main() {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
+
+
+//    val chunkNBT = AnvilLoader.extractNBT(Path.of("/home/ng5m/.local/share/multimc/instances/1.21.4 fabric/.minecraft/saves/New World/region"), 0, 0)
+//    val blockEntities = chunkNBT.getList<dev.ng5m.serialization.nbt.impl.CompoundTag>("block_entities")
+//
+//    println(blockEntities)
 
 //    limboServer()
 
@@ -108,7 +106,7 @@ fun main() {
                     val y = 30 + noise.evaluateNoise((wx.toDouble() + bx), (wz.toDouble() + bz)) * 20
                     context.fillHeight(
                         bx, bz, 0..y.toInt(),
-                        Registries.BLOCK.randomElement(random)
+                        Registries.BLOCK.randomElement(random).defaultBlockState()
 //                        BlockState(STONE)
                     )
                 }
@@ -122,8 +120,38 @@ fun main() {
                 }
             }
 
-            context.chunk().addBlockEntity(0, 50, 0,
-                BlockEntity(Vector3i(0, 50, 0), BlockEntityType.CHEST, dev.ng5m.serialization.nbt.impl.CompoundTag()))
+            context.chunk().addBlockEntity(
+                BlockEntity(0, 50, 0, BlockEntityType.CHEST, dev.ng5m.serialization.nbt.impl.CompoundTag())
+            )
+        }
+    }
+
+    val noise: JNoise = JNoise.newBuilder()
+        .perlin(1L, Interpolation.COSINE, FadeFunction.QUINTIC_POLY)
+        .scale(0.03)
+        .build()
+
+    val coolGenerator = object : ChunkGenerator {
+        override fun generate(context: ChunkGenerationContext) {
+            val wx = context.chunkX() * 16
+            val wz = context.chunkZ() * 16
+
+            for (bx in 0 until 16) {
+                for (bz in 0 until 16) {
+                    val y = (30 + noise.evaluateNoise((wx.toDouble() + bx), (wz.toDouble() + bz)) * 20).toInt()
+                    context.fillHeight(
+                        bx, bz, 0..y, Blocks.STONE.defaultBlockState()
+                    )
+
+                    context.fillHeight(bx, bz, y..y + 2, Blocks.DIRT.defaultBlockState())
+//                    context.setBlockStateAt(bx, bz, y + 3..y+4, Blocks.GRASS_BLOCK.defaultBlockState())
+                    context.setBlockAt(bx, y + 10, bz, Blocks.GOLD_BLOCK)
+
+                }
+            }
+
+//            context.fillBiome(customBiome)
+            context.setBlockAt(0, 50, 0, Blocks.CHEST)
         }
     }
 
@@ -135,7 +163,7 @@ fun main() {
             for (bx in 0 until 16) {
                 for (by in 0 until 16) {
                     for (bz in 0 until 16) {
-                        context.setBlockStateAt(bx, by, bz, Registries.BLOCK.randomElement(random))
+                        context.setBlockStateAt(bx, by, bz, Blocks.BEDROCK.defaultBlockState())
                     }
                 }
             }
@@ -147,28 +175,31 @@ fun main() {
                     }
                 }
             }
+
+            context.setBlockAt(0, 40, 0, Blocks.CHEST)
         }
     }
 
-    world.chunkGenerator = randomChunkGenerator
+    world.chunkGenerator = coolGenerator
 
     EventManager.register(PlayerPreJoinEvent::class.java) {
         it.player.setWorld(world)
-        it.player.location = Location(world, 0.0, 42.0, 0.0)
+        it.player.location = Location(world, 0.0, 200.0, 0.0)
         it.player.gameMode = GameMode.CREATIVE
 
         for (i in 0 until 46) {
             it.player.inventory.setItem(
                 i, ItemStack(
                     Registries.ITEM.randomElement(random)
-                ).withCount(Int.MAX_VALUE)
+                ).withCount(10)
             )
         }
+
+        it.player.inventory.chest(ItemStack.AIR)
     }
 
-    var i = 0
     EventManager.register(PlayerJoinEvent::class.java) {
-        tabList.setPlayerIndex(it.player.getIdentity().getAdequateUUID(), 20 * i++)
+        tabList.setPlayerIndex(it.player.getIdentity().getAdequateUUID(), 0)
     }
 
     EventManager.register(S2CPacketEvent::class.java) {
@@ -201,7 +232,7 @@ fun limboServer() {
     EventManager.register(PlayerPreJoinEvent::class.java) {
         it.player.setWorld(world)
         it.player.location = Location(world, Double.MAX_VALUE, Double.MAX_VALUE, 0.0)
-        it.player.gameMode = GameMode.ADVENTURE
+        it.player.gameMode = GameMode.CREATIVE
     }
 
     server.run(25565)

@@ -16,6 +16,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Consumer
 import kotlin.io.path.isDirectory
+import kotlin.math.ceil
+import kotlin.math.log2
 import kotlin.reflect.KClass
 
 val COMPONENT_JSON_TRANSCODER: Transcoder<Component, String> = object : Transcoder<Component, String> {
@@ -40,11 +42,6 @@ val PEEKING_BYTE_ARRAY_CODEC: Codec<ByteArray> = Codec.of(
     },
     ByteBuf::writeBytes
 )
-
-fun <T> doAndReturn(o: T, consumer: Consumer<T>): T {
-    consumer.accept(o)
-    return o
-}
 
 fun <T> or(a: T, fallback: T): T {
     a ?: return fallback
@@ -81,7 +78,7 @@ fun mergeJSONTags(directory: Path): JsonObject {
         }
 
         o.add(
-            "minecraft:" + fileName.substring(0, fileName.length - 5),
+            "minecraft:" + fileName.dropLast(5),
             JsonParser.parseString(Files.readString(file)).asJsonObject["values"]
         )
     }
@@ -189,4 +186,8 @@ fun <T> sneakyThrow(x: Throwable): T {
 
 infix fun Byte.and(other: Byte): Byte {
     return (other.toInt() and toInt()).toByte()
+}
+
+fun bitsToRepresent(v: Int): Int {
+    return Int.SIZE_BITS - Integer.numberOfLeadingZeros(v)
 }

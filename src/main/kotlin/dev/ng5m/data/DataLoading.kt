@@ -1,10 +1,12 @@
 package dev.ng5m.data
 
-import com.google.gson.reflect.TypeToken
 import dev.ng5m.MinecraftServer
 import dev.ng5m.MinecraftServer.Companion.GSON
+import dev.ng5m.block.Block
 import dev.ng5m.block.BlockState
 import dev.ng5m.block.Blocks
+import dev.ng5m.registry.Registries
+import dev.ng5m.registry.Registry
 import dev.ng5m.util.Properties
 import dev.ng5m.util.mapTags
 import net.kyori.adventure.key.Key
@@ -14,30 +16,51 @@ import kotlin.reflect.full.declaredMemberProperties
 
 fun loadBlocks() {
     val obj = GSON.fromJson(
-        Files.readString(_root_ide_package_.dev.ng5m.registry.Registry.Companion.DATA_PATH.resolve("blocks.json")),
+        Files.readString(Registry.DATA_PATH.resolve("blocks.json")),
         object : com.google.gson.reflect.TypeToken<Map<String, BlocksReportTemplate>>() {})
 
     for (field in Blocks::class.declaredMemberProperties) {
-        val v = field.get(Blocks) as Key
+        val v = field.get(Blocks) as Block
 
-        val blockObj = obj[v.asString()] ?: continue
+        val blockObj = obj[Registries.BLOCK.keyByValue(v).toString()] ?: continue
 
+        var def: BlockState? = null
         for (state in blockObj.states) {
-            val properties = Properties.ofMap(state.properties ?: mapOf<String, Any>())
-
-            _root_ide_package_.dev.ng5m.registry.Registries.BLOCK.registerAt(state.id, v, BlockState(v, properties))
+            if (state.default) def = state.toBlockState(v)
         }
-    }
 
+        if (def == null) {
+            throw RuntimeException(blockObj.toString())
+        }
+
+        val lookup = mutableMapOf<BlockState, Int>()
+        val mappedStates = blockObj.states.toList().map {
+            val bs = it.toBlockState(v)
+            lookup[bs] = it.id
+            bs
+        }
+
+        BlockState.stateManager.register(
+            v,
+            def,
+            mappedStates,
+        ) { state -> lookup[state]!! }
+    }
 }
 
 private data class BlocksReportTemplate(
     val states: List<State>
 ) {
     data class State(
+        val default: Boolean = false,
         val id: Int,
         val properties: Map<String, String>?
-    )
+    ) {
+        fun toBlockState(block: Block): BlockState = BlockState(block,
+            if (properties == null) Properties.ofMap()
+            else Properties.ofMap(properties)
+        )
+    }
 }
 
 private fun flattenTags(map: Map<String, List<String>>): MutableMap<String, List<String>> {
@@ -75,7 +98,8 @@ private fun flattenTags(map: Map<String, List<String>>): MutableMap<String, List
 
 fun computeTags() {
     for (registry in _root_ide_package_.dev.ng5m.registry.Registry.Companion.getAllRegistries()) {
-        val outPath = _root_ide_package_.dev.ng5m.registry.Registry.Companion.DATA_PATH.resolve("tags").resolve(registry.id.value() + ".json")
+        val outPath = _root_ide_package_.dev.ng5m.registry.Registry.Companion.DATA_PATH.resolve("tags")
+            .resolve(registry.id.value() + ".json")
 
         if (!outPath.toFile().exists()) continue
 

@@ -3,16 +3,20 @@ package dev.ng5m.player
 import dev.ng5m.MinecraftConnection
 import dev.ng5m.MinecraftServer
 import dev.ng5m.entity.EntityType
+import dev.ng5m.entity.ItemEntity
 import dev.ng5m.entity.LivingEntity
+import dev.ng5m.entity.inventory.Inventory
 import dev.ng5m.entity.inventory.PlayerInventory
+import dev.ng5m.entity.inventory.TitledInventory
+import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
 import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
 import dev.ng5m.packet.play.s2c.*
 import dev.ng5m.util.IntTracker
 import dev.ng5m.util.PacketSendContext
-import dev.ng5m.util.math.Vector2i
 import dev.ng5m.world.ChunkSection
 import dev.ng5m.world.Location
+import dev.ng5m.world.World
 import net.kyori.adventure.text.Component
 import java.util.Optional
 import kotlin.math.min
@@ -32,6 +36,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
     val windowIdTracker = IntTracker()
 
     val inventory = PlayerInventory(this)
+    var heldItem = 0
 
     lateinit var connection: MinecraftConnection
     private var identity: Identity? = null
@@ -53,6 +58,10 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
     private var particleStatus: ParticleStatus = ParticleStatus.ALL
 
     private var previousGameMode: GameMode = GameMode.UNDEFINED
+
+    var carriedItem: ItemStack = ItemStack.AIR
+    var openInventory: Inventory? = null
+    internal val syncIdTracker = IntTracker()
     var gameMode: GameMode = GameMode.SURVIVAL
         set(value) {
             previousGameMode = field
@@ -61,12 +70,10 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     private var deathLocation: Location? = null
 
+    private val viewedChunks: MutableSet<Int> = mutableSetOf()
+
     var sprinting = false
     var sneaking = false
-
-    init {
-        health = 20.0
-    }
 
     fun applyClientInformation(packet: ClientInformationC2SPacket) {
         locale = packet.locale
@@ -102,24 +109,91 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
         }
     }
 
+    fun disconnectWithException(x: Exception) {
+        disconnect(Component.text(x.toString()))
+    }
+
+    fun dropItem(itemStack: ItemStack) {
+        getWorld().spawnEntity(location, ItemEntity(itemStack))
+    }
+
+    fun dropHeldItem(fullStack: Boolean) {
+        val item = inventory.hotbar(heldItem).clone()
+        val count = item.count()
+
+        if (count - 1 <= 0 || fullStack) {
+            dropItem(item)
+            inventory.hotbar(heldItem, ItemStack.AIR)
+        } else {
+            dropItem(item.withCount(1))
+            inventory.hotbar(heldItem, item.withCount(count - 1))
+        }
+    }
+
     fun generateAndSendChunksAround() {
         val playerChunkXZ = location.toChunk()
         val vd = viewDistance
 
-        var ctx: PacketSendContext? = null
-        for (x in playerChunkXZ.x - vd..playerChunkXZ.x + vd) {
-            for (z in playerChunkXZ.y - vd..playerChunkXZ.y + vd) {
-                val chunk = location.world.generateIfAbsent(x, z)
+        MinecraftServer.workerPool.submit {
+            var ctx: PacketSendContext? = null
+            location.world.generateInRadius(
+                playerChunkXZ.x, playerChunkXZ.y, vd
+            ) { chunk ->
                 ctx = connection.sendPacket(ChunkS2CPacket(chunk))
             }
-        }
 
-        ctx?.onFinish {
-            println("average: ${ChunkSection.totalTime / ChunkSection.times}ns")
+            ctx?.onFinish {
+                println("average: ${ChunkSection.totalTime / ChunkSection.times}ns")
+            }
         }
     }
 
+    fun sendSystemMessage(content: Component, actionBar: Boolean = false) {
+        connection.sendPacket(SystemChatS2CPacket(content, actionBar))
+    }
+
+    fun openInventory(inventory: Inventory) {
+        openInventory = inventory
+
+        connection.sendPacket(
+            OpenScreenS2CPacket(
+                inventory.id(),
+                inventory.type(),
+                if (inventory is TitledInventory) inventory.title() else Component.empty()
+            )
+        )
+
+        connection.sendPacket(
+            SetContainerContentsS2CPacket(
+                inventory.id(), inventory.revision(),
+                inventory.slots(), carriedItem
+            )
+        )
+
+        if (inventory.slots().any { it != ItemStack.AIR })
+            println(inventory.slots().first { it != ItemStack.AIR }.item.key)
+    }
+
+    fun updateSlot(inventory: Inventory, slot: Short, stack: ItemStack) {
+        connection.sendPacket(
+            SetContainerSlotS2CPacket(
+                inventory.id(), inventory.revision(),
+                slot, stack
+            )
+        )
+    }
+
+    fun updateCarriedItem() {
+        connection.sendPacket(SetCursorItemS2CPacket(carriedItem))
+    }
+
     private fun packDelta(d: Double): Double = round(d * 4096.0)
+
+    private fun chunkRadius(radius: Int, rootX: Int, rootZ: Int, set: MutableSet<Int>) {
+        for (cx in rootX - radius .. rootZ + radius)
+            for (cz in rootZ - radius .. rootZ + radius)
+                set.add(World.packChunkCoordinates(cx, cz))
+    }
 
     fun move() {
         val delta = location.xyz.clone() - previousLocation.xyz
@@ -133,15 +207,18 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
         getOtherPlayers().forEach {
             if (delta.x > 8 || delta.x < -7.999755859375 ||
                 delta.y > 8 || delta.y < -7.999755859375 ||
-                delta.z > 8 || delta.z < -7.999755859375) {
+                delta.z > 8 || delta.z < -7.999755859375
+            ) {
                 it.connection.sendPacket(
                     SyncEntityPositionS2CPacket(this)
                 )
             } else {
-                it.connection.sendPacket(MoveEntityPacket.PosRot(
-                    getEntityId(), specialDelta,
-                    headYaw, location.pitch, onGround
-                ))
+                it.connection.sendPacket(
+                    MoveEntityPacket.PosRot(
+                        getEntityId(), specialDelta,
+                        headYaw, location.pitch, onGround
+                    )
+                )
 
                 if (rotYaw) it.connection.sendPacket(RotateHeadS2CPacket(this))
             }
@@ -151,31 +228,30 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
         val vd = viewDistance
 
         val previousChunkXZ = previousLocation.toChunk()
+
         if (playerChunkXZ == previousChunkXZ) return
+
+        if (viewedChunks.isEmpty()) {
+            chunkRadius(vd, previousChunkXZ.x, previousChunkXZ.y, viewedChunks)
+        }
 
         connection.sendPacket(SetCenterChunkS2CPacket(playerChunkXZ.x, playerChunkXZ.y))
 
-        val prev = mutableSetOf<Vector2i>()
-        for (cx in previousChunkXZ.x - vd..previousChunkXZ.x + vd) {
-            for (cz in previousChunkXZ.y - vd..previousChunkXZ.y + vd) {
-                prev.add(Vector2i(cx, cz))
-            }
+        val current = mutableSetOf<Int>()
+        chunkRadius(vd, playerChunkXZ.x, playerChunkXZ.y, current)
+
+        for (pos in viewedChunks subtract current) {
+            val unpacked = World.unpackChunkCoordinates(pos)
+            getWorld().unloadChunk(unpacked.first, unpacked.second)
         }
 
-        val current = mutableSetOf<Vector2i>()
-        for (cx in playerChunkXZ.x - vd..playerChunkXZ.x + vd) {
-            for (cz in playerChunkXZ.y - vd..playerChunkXZ.y + vd) {
-                current.add(Vector2i(cx, cz))
-            }
+        for (pos in current subtract viewedChunks) {
+            val unpacked = World.unpackChunkCoordinates(pos)
+            connection.sendPacket(ChunkS2CPacket(getWorld().generateIfAbsent(unpacked.first, unpacked.second)))
         }
 
-        for (pos in prev subtract current) {
-            getWorld()!!.unloadChunk(pos.x, pos.y)
-        }
-
-        for (pos in current subtract prev) {
-            connection.sendPacket(ChunkS2CPacket(getWorld()!!.generateIfAbsent(pos.x, pos.y)))
-        }
+        viewedChunks.clear()
+        viewedChunks.addAll(current)
     }
 
     fun getOtherPlayers(): Collection<Player> {

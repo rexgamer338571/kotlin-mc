@@ -26,7 +26,7 @@ class ItemComponentMap {
                 }
 
                 return@of map
-           },
+            },
             { buf, map ->
                 Codec.VARINT.write(buf, map.toAdd.size)
                 Codec.VARINT.write(buf, map.toRemove.size)
@@ -79,10 +79,49 @@ class ItemComponentMap {
         return this
     }
 
+    fun <T : Any> has(type: ItemComponentType<T>): Boolean =
+        toAdd.containsKey(type)
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> get(type: ItemComponentType<T>): T = toAdd[type]!! as T
+
     private fun removeUnsafe(type: ItemComponentType<*>): ItemComponentMap {
         @Suppress("UNCHECKED_CAST")
         toRemove.add(type as ItemComponentType<out Any>)
         return this
+    }
+
+    private fun <K, V> compareMaps(first: Map<K, V>, second: Map<K, V>): Boolean {
+        if (first.size != second.size) return false
+
+        for (key in first.keys) {
+            if (!second.containsKey(key)) return false
+            if (first[key] != second[key]) return false
+        }
+
+        return true
+    }
+
+    private fun <T> compareSets(first: Set<T>, second: Set<T>): Boolean {
+        if (first.size != second.size) return false
+
+        for (t in first) {
+            if (!second.contains(t)) return false
+        }
+
+        return true
+    }
+
+    fun isSimilar(other: ItemComponentMap): Boolean {
+        return compareMaps(toAdd, other.toAdd) && compareSets(toRemove, other.toRemove)
+    }
+
+    fun clone(): ItemComponentMap {
+        val map = ItemComponentMap()
+        map.toAdd.putAll(toAdd)
+        map.toRemove.addAll(toRemove)
+
+        return map
     }
 
 }

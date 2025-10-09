@@ -9,8 +9,9 @@ import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization.nbt.impl.CompoundTag
+import dev.ng5m.util.bitsToRepresent
 import dev.ng5m.util.mapToValueList
-import dev.ng5m.util.math.Vector3i
+import org.joml.Vector3i
 import java.util.*
 
 class Chunk(
@@ -20,9 +21,11 @@ class Chunk(
     private val sectionLoader: ChunkSectionLoader = ChunkSectionLoader.DEFAULT,
     private val heightmaps: CompoundTag = CompoundTag()
 ) {
+    private val dimensionType = Registries.DIMENSION_TYPE.getOrThrow(typeKey)
+    private val height = dimensionType.minY + dimensionType.height - 1
     internal val sections: MutableMap<Int, ChunkSection> = mutableMapOf()
 
-    private val blockEntities: MutableMap<Vector3i, BlockEntity> = mutableMapOf()
+    private val blockEntities: MutableMap<Int, BlockEntity> = mutableMapOf()
 
     companion object {
         val CODEC: Codec<Chunk> = Codec.of(
@@ -42,12 +45,24 @@ class Chunk(
             Codec.BYTE_ARRAY, { ByteArray(2048) },
             { _, _, _, _, _, _, _, _, _, _, _ -> TODO() }
         )
+
+        fun packChunkCoordinates(x: Int, y: Int, z: Int, height: Int): Int {
+            return (y shl (bitsToRepresent(height) + 8)) or ((x and 15) shl 4) or (z and 15)
+        }
+
+        fun unpackChunkCoordinates(v: Int, height: Int): Triple<Int, Int, Int> {
+            return Triple(
+                (v shr 4) and 15,
+                (v shr (bitsToRepresent(height) + 8)),
+                v and 15
+            )
+        }
+
     }
 
     init {
-        val dimensionType = Registries.DIMENSION_TYPE.getOrThrow(typeKey)
         val lowestSectionY: Int = dimensionType.minY / 16
-        val highestSectionY: Int = (dimensionType.minY + dimensionType.height - 1) / 16
+        val highestSectionY: Int = height / 16
 
         for (i in lowestSectionY..highestSectionY) {
             sections[i] = sectionLoader.get(i)
@@ -55,23 +70,32 @@ class Chunk(
     }
 
     fun addBlockEntity(x: Int, y: Int, z: Int, blockEntity: BlockEntity) {
-        blockEntities[Vector3i(x, y, z)] = blockEntity
+        blockEntities[packChunkCoordinates(x, y, z, height)] = blockEntity
     }
+
+    fun addBlockEntity(blockEntity: BlockEntity) {
+        addBlockEntity(blockEntity.x, blockEntity.y, blockEntity.z, blockEntity)
+    }
+
+    fun getBlockEntity(x: Int, y: Int, z: Int): BlockEntity? = blockEntities[packChunkCoordinates(x, y, z, height)]
 
     fun getBlockIdAt(x: Int, y: Int, z: Int): Int {
         val section: ChunkSection = sections[getSectionY(y)] ?: return -1
 
-        return section.getBlock(x, (y % 16 + 16) % 16, z)
+        return section.getBlock(x % 16, (y % 16 + 16) % 16, z % 16)
     }
 
     fun getBlockStateAt(x: Int, y: Int, z: Int): BlockState {
-        return Registries.BLOCK.getOrThrow(Registries.BLOCK.keyById(getBlockIdAt(x, y, z)))
+        return BlockState.stateManager.byId(getBlockIdAt(x, y, z))
     }
 
     fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {
         val section: ChunkSection = sections[getSectionY(y)] ?: return
 
-        section.setBlock(x, (y % 16 + 16) % 16, z, Registries.BLOCK.idByKey(Registries.BLOCK.resourceKeyByKey(state.id)))
+        val blockEntity = state.block.getBlockEntity(x, y, z, state)
+        if (blockEntity != null) addBlockEntity(x, y, z, blockEntity)
+
+        section.setBlock(x % 16, (y % 16 + 16) % 16, z % 16, BlockState.stateManager.idBy(state))
     }
 
     fun setBiomeAt(x: Int, y: Int, z: Int, biome: ResourceKey<Biome>) {

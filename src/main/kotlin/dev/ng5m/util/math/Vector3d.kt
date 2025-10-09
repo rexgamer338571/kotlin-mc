@@ -1,6 +1,8 @@
 package dev.ng5m.util.math
 
 import dev.ng5m.serialization.Codec
+import dev.ng5m.serialization.function.F3
+import java.util.function.Function
 import java.util.function.UnaryOperator
 
 class Vector3d(var x: Double, var y: Double, var z: Double) {
@@ -22,6 +24,14 @@ class Vector3d(var x: Double, var y: Double, var z: Double) {
         y = op.apply(y)
         z = op.apply(z)
         return this
+    }
+
+    fun <T, V> transformTo(op: Function<Double, T>, factory: F3<T, T, T, V>): V {
+        return factory.apply(
+            op.apply(x),
+            op.apply(y),
+            op.apply(z),
+        )
     }
 
     operator fun minus(vec: Vector3d): Vector3d {
@@ -46,7 +56,7 @@ class Vector3d(var x: Double, var y: Double, var z: Double) {
     }
 
     fun toShorts(): Vector3s {
-        return Vector3s(x.toInt().toShort(), y.toInt().toShort(), z.toInt().toShort())
+        return transformTo({ it.toInt().toShort() }, ::Vector3s)
     }
 
     override fun toString(): String {

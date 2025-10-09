@@ -1,8 +1,10 @@
 package dev.ng5m.item
 
-class Item {
+import net.kyori.adventure.key.Key
+
+class Item(val key: Key) {
     companion object {
-        val UNDEFINED = Item()
+        val UNDEFINED = Item(Key.key("undefined"))
     }
 
     enum class Rarity {

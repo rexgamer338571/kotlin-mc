@@ -23,13 +23,15 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.1")
     implementation("io.netty:netty-all:4.2.5.Final")
     implementation("io.ktor:ktor-network:3.3.0")
-
+    implementation("org.joml:joml:1.10.8")
     implementation("dev.ng5m:serialization:1.0-SNAPSHOT")
     implementation("net.kyori:adventure-api:4.24.0")
     implementation("net.kyori:adventure-text-serializer-gson:4.24.0")
 
     implementation("de.articdive:jnoise-pipeline:4.1.0")
     implementation("org.openjdk.jol:jol-core:0.10")
+
+    implementation(group = "it.unimi.dsi", name = "fastutil", version = "8.2.2")
 
 }
 

@@ -22,6 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
+import kotlin.math.floor
 
 class AnvilLoader(val rootWorldDir: Path) {
     companion object {
@@ -30,7 +31,62 @@ class AnvilLoader(val rootWorldDir: Path) {
                 CompressionType::class.java,
                 Codec.of({ it.readByte().toInt() }, ByteBuf::writeByte)
             ) { it.id }
+
+        fun extractNBT(mcaDir: Path, cx: Int, cz: Int): CompoundTag {
+            NBT.init();
+
+            val mcaPath = mcaDir.resolve("r.${cx shr 5}.${cz shr 5}.mca")
+
+            val split = mcaPath.fileName.toString().split(".")
+
+            val buf = Unpooled.wrappedBuffer(Files.readAllBytes(mcaPath))
+
+            if (buf.readableBytes() == 0) return CompoundTag()
+
+            buf.readerIndex((cx % 32) + (cz % 32) * 32)
+            val entry = buf.readInt()
+            val offsetBytes = ((entry shr 8) and 0xffffff) * 4096
+            val length = (entry and 0xFF) * 4096
+
+            buf.readerIndex(offsetBytes)
+
+            val lengthBytes = buf.readInt()
+            val compression = CT_CODEC.read(buf)!!
+
+            if (compression == CompressionType.CUSTOM) {
+                val l = buf.readUnsignedShort()
+                val algo = String(buf.readBytes(l).array(), StandardCharsets.UTF_8)
+
+                throw RuntimeException("compressed using custom algorithm: $algo")
+            }
+
+            val data = buf.readBytes(lengthBytes - 1)
+            val decompressed = Unpooled.buffer()
+
+            when (compression) {
+                CompressionType.GZIP -> {
+                    val gzIS = GZIPInputStream(ByteBufInputStream(data))
+
+                    var len: Int
+                    val buffer = ByteArray(1024)
+
+                    while ((gzIS.read(buffer).also { len = it }) != -1) {
+                        decompressed.writeBytes(Arrays.copyOf(buffer, len))
+                    }
+                }
+                CompressionType.ZLIB -> {
+                    decompressZL(data, decompressed)
+                }
+                CompressionType.NONE -> decompressed.writeBytes(data)
+                CompressionType.LZ4 -> TODO()
+                CompressionType.CUSTOM -> TODO()
+            }
+
+            return NBT.readTagT(decompressed, true)
+        }
     }
+
+
 
     private fun loadSingle(mcaDir: Path, worldKey: Key, dimensionType: ResourceKey<DimensionType>) {
         val world = World(dimensionType, worldKey)
@@ -114,8 +170,8 @@ class AnvilLoader(val rootWorldDir: Path) {
                     val section = ChunkSection()
                     val sectionY = cSection.getByte("Y").toInt()
 
-                    convertPaletteContainer(section.blocks, cSection["block_states"], true)
-                    convertPaletteContainer(section.biomes, cSection["biomes"], false)
+//                    convertPaletteContainer(section.blocks, cSection["block_states"], true)
+//                    convertPaletteContainer(section.biomes, cSection["biomes"], false)
 
                     sectionMap[sectionY] = section
                 }
@@ -149,7 +205,7 @@ class AnvilLoader(val rootWorldDir: Path) {
                 if (cur > bpe) bpe = cur
             }
 
-            ChunkSection.unpackDataArray(blocks, data, bpe)
+            ChunkSection.unpackDataArray(0, data, bpe)
         }
     }
 

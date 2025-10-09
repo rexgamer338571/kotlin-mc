@@ -15,6 +15,7 @@ import dev.ng5m.util.Task
 import io.netty.buffer.ByteBuf
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.EncoderException
 import io.netty.handler.codec.MessageToByteEncoder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -36,12 +37,13 @@ class MCEncoder : MessageToByteEncoder<Packet>() {
             error("no codec found for ${packet.javaClass.simpleName}")
         }
 
-        if (packet is TabListS2CPacket) {
-            println(NBT.toNBT(packet.footer))
+        val buf = ctx.alloc().buffer()
+        val id = connection.protocolState.idForType(NetworkFlow.CLIENTBOUND, packet.javaClass)
+        if (id == -1) {
+            throw EncoderException("Type ${packet::class.simpleName} not registered")
         }
 
-        val buf = ctx.alloc().buffer()
-        Codec.VARINT.write(buf, connection.protocolState.idForType(NetworkFlow.CLIENTBOUND, packet.javaClass))
+        Codec.VARINT.write(buf, id)
 
         try {
             codec.write(buf, packet)
@@ -55,7 +57,8 @@ class MCEncoder : MessageToByteEncoder<Packet>() {
         }
 
         Codec.VARINT.write(out, buf.writerIndex())
-        out.writeBytes(buf)
+//        if (packet !is ChunkS2CPacket)
+            out.writeBytes(buf)
         buf.release()
 
         if (connection.protocolState.shouldLog(packet.javaClass))

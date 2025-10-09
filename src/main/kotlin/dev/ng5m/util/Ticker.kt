@@ -7,6 +7,7 @@ import kotlin.concurrent.thread
 class Ticker(val delayMS: Long, val events: Events) {
     constructor() : this(-1, Events.NONE)
 
+    private var running = false
     private val tickingObjects: MutableSet<Ticking> = ConcurrentHashMap.newKeySet()
     private lateinit var thread: Thread
 
@@ -32,10 +33,11 @@ class Ticker(val delayMS: Long, val events: Events) {
             }
         })
         thread.start()
+        running = true
     }
 
     fun stop() {
-        thread.interrupt()
+        if (running) thread.interrupt()
     }
 
     fun tick() {

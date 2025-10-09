@@ -6,9 +6,8 @@ import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization.nbt.Tag
 import dev.ng5m.util.math.Vector2i
-import dev.ng5m.util.math.Vector3i
 
-class BlockEntity(val pos: Vector3i, val type: ResourceKey<BlockEntityType>, val data: Tag<*>) {
+class BlockEntity(val x: Int, val y: Int, val z: Int, val type: ResourceKey<BlockEntityType>, val data: Tag<*>) {
     companion object {
         private val CODEC_PACKED_XZ: Codec<Vector2i> = Codec.of(
             { buf ->
@@ -19,11 +18,11 @@ class BlockEntity(val pos: Vector3i, val type: ResourceKey<BlockEntityType>, val
         )
 
         val CODEC: Codec<BlockEntity> = Codec.of(
-            CODEC_PACKED_XZ, { Vector2i(it.pos.x, it.pos.z) },
-            Codec.SHORT, { it.pos.y.toShort() },
+            CODEC_PACKED_XZ, { Vector2i(it.x, it.z) },
+            Codec.SHORT, { it.y.toShort() },
             Registries.BLOCK_ENTITY_TYPE.idCodec, { it.type },
             NBT.UNNAMED_TAG_CODEC, { it.data },
-            { xz, y, type, data -> BlockEntity(Vector3i(xz.x, y.toInt(), xz.y), type, data) }
+            { xz, y, type, data -> BlockEntity(xz.x, y.toInt(), xz.y, type, data) }
         )
         val LIST_CODEC: Codec<List<BlockEntity>> = CODEC.list()
     }

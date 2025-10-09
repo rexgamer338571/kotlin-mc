@@ -56,9 +56,12 @@ interface Properties {
         }
 
         override fun toString(): String {
+            if (map.isEmpty()) return "[]"
+
             val sb = StringBuilder("[")
-            for ((k, v) in map) sb.append("$k=$v")
-            return sb.append("]").toString()
+            for ((k, v) in map) sb.append("$k=$v, ")
+
+            return "${sb.substring(0, sb.length - 2)}]"
         }
 
     }

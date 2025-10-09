@@ -1,27 +1,38 @@
 package dev.ng5m.world
 
-import dev.ng5m.Agent
 import dev.ng5m.MinecraftServer
+import dev.ng5m.block.Block
 import dev.ng5m.block.BlockState
 import dev.ng5m.entity.Entity
+import dev.ng5m.entity.ItemEntity
+import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.RemoveEntitiesS2CPacket
-import dev.ng5m.packet.play.s2c.SpawnEntityS2CPacket
 import dev.ng5m.packet.play.s2c.UnloadChunkS2CPacket
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionType
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
-import dev.ng5m.util.math.Vector2i
+import dev.ng5m.util.math.Vector3d
+import dev.ng5m.util.math.Vector3i
 import dev.ng5m.world.GameRules.DO_IMMEDIATE_RESPAWN
 import dev.ng5m.world.GameRules.DO_LIMITED_CRAFTING
 import dev.ng5m.world.GameRules.REDUCED_DEBUG_INFO
 import net.kyori.adventure.key.Key
-import org.openjdk.jol.info.ClassLayout
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.util.function.Consumer
+import kotlin.math.floor
 
 class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
+    companion object {
+        fun packChunkCoordinates(x: Int, z: Int, precision: Int = 16): Int =
+            (x shl precision) or (z and ((1 shl precision) - 1))
+
+        fun unpackChunkCoordinates(packed: Int, precision: Int = 16): Pair<Int, Int> =
+            (packed shr precision) to (packed and ((1 shl precision) - 1))
+    }
+
     private val type: DimensionType = Registries.DIMENSION_TYPE.getOrThrow(typeKey)
     private val gameRules = mutableMapOf(
         REDUCED_DEBUG_INFO to false,
@@ -30,7 +41,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     )
     private val entities: MutableSet<Entity> = mutableSetOf()
 
-    private val chunks: MutableMap<Vector2i, Chunk?> = mutableMapOf()
+    private val chunks: MutableMap<Int, Chunk?> = mutableMapOf()
     var chunkProvider: ChunkProvider = ChunkProvider.EMPTY
     var chunkGenerator: ChunkGenerator = ChunkGenerator.EMPTY
 
@@ -52,21 +63,28 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
     fun addEntity(entity: Entity) {
         MinecraftServer.getInstance().removeTicking(entity)
-        if (entity.getWorld() != null) entity.getWorld()!!.removeEntityRaw(entity)
+        if (entity.isSpawned())
+            entity.getWorld().removeEntityRaw(entity)
 
         entity.setWorld(this)
 
-        entities.filter { it != entity && it is Player }.map { it as Player }.forEach {
-            it.connection.sendPacket(SpawnEntityS2CPacket(entity))
-        }
+        entities.filter { it != entity && it is Player }
+            .map { it as Player }
+            .forEach {
+                entity.spawnForPlayer(it)
+            }
 
         entities.add(entity)
         MinecraftServer.getInstance().addTicking(entity)
     }
 
+    fun spawnEntity(location: Location, entity: Entity) {
+        entity.location = location.clone()
+        addEntity(entity)
+    }
+
     fun generateChunkIfAbsent(x: Int, z: Int) {
-        val vec = Vector2i(x, z)
-        val chunk = chunks.computeIfAbsent(vec) { _ -> chunkProvider.get(this, x, z) }!!
+        val chunk = chunks.computeIfAbsent(packChunkCoordinates(x, z)) { _ -> chunkProvider.get(this, x, z) }!!
         val ctx = object : ChunkGenerationContext {
             override fun chunkX(): Int = x
             override fun chunkZ(): Int = z
@@ -83,6 +101,12 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
                 chunk.setBiomeAtCell(x, y, z, biome)
             }
 
+            override fun fillBiome(biome: ResourceKey<Biome>) {
+                val id = Registries.BIOME.idByKey(biome)
+                for ((_, section) in chunk.sections)
+                    section.biomes = PalettedContainer(256, 1, 3, 6, id)
+            }
+
             override fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {
                 chunk.setBlockStateAt(x, y, z, state)
             }
@@ -91,9 +115,9 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
                 x: Int,
                 y: Int,
                 z: Int,
-                block: Key
+                block: Block
             ) {
-                setBlockStateAt(x, y, z, BlockState(block))
+                setBlockStateAt(x, y, z, block.defaultBlockState())
             }
 
             override fun chunk(): Chunk = chunk
@@ -104,7 +128,15 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
     fun generateIfAbsent(x: Int, z: Int): Chunk {
         generateChunkIfAbsent(x, z)
-        return chunks[Vector2i(x, z)]!!
+        return chunks[packChunkCoordinates(x, z)]!!
+    }
+
+    fun generateInRadius(rootX: Int, rootZ: Int, radius: Int, callback: Consumer<Chunk> = Consumer<Chunk> {}) {
+        for (x in rootX - radius..rootX + radius) {
+            for (z in rootZ - radius..rootZ + radius) {
+                callback.accept(generateIfAbsent(x, z))
+            }
+        }
     }
 
     fun unloadChunk(x: Int, z: Int) {
@@ -113,7 +145,25 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
             .map { it as Player }
             .forEach { it.connection.sendPacket(UnloadChunkS2CPacket(x, z)) }
 
-        chunks[Vector2i(x, z)] = null
+        chunks[packChunkCoordinates(x, z, 16)] = null
+    }
+
+
+
+    fun getBlockAt(x: Int, y: Int, z: Int): Block? {
+        val cx = floor(x / 16.0).toInt()
+        val cz = floor(z / 16.0).toInt()
+
+        return (chunks[packChunkCoordinates(cx, cz)]?.getBlockStateAt(x % 16, y, z % 16)?.block)
+    }
+
+    fun getBlockAt(pos: Vector3i): Block? = getBlockAt(pos.x, pos.y, pos.z)
+
+    fun dropItem(pos: Vector3d, stack: ItemStack) {
+        val item = ItemEntity(stack)
+        item.location = Location(this, pos)
+
+        addEntity(item)
     }
 
     fun getHashedSeed(): Long {

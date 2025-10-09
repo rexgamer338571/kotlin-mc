@@ -286,7 +286,7 @@ object NBT {
         throw IllegalArgumentException("waa")
     }
 
-    private fun getRealName(property: KProperty1<*, *>): String {
+    fun getRealName(property: KProperty1<*, *>): String {
         if (property.hasAnnotation<SerializedName>()) return property.findAnnotation<SerializedName>()!!.value
         if (property.hasAnnotation<com.google.gson.annotations.SerializedName>()) return property.findAnnotation<com.google.gson.annotations.SerializedName>()!!.value
 

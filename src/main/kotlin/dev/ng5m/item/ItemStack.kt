@@ -2,9 +2,12 @@ package dev.ng5m.item
 
 import dev.ng5m.item.component.ItemComponentMap
 import dev.ng5m.item.component.ItemComponentType
+import dev.ng5m.item.component.ItemComponentTypes
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.Codec
+import kotlin.math.max
+import kotlin.math.min
 
 open class ItemStack(val item: Item) {
     companion object {
@@ -35,7 +38,8 @@ open class ItemStack(val item: Item) {
                 Codec.VARINT.write(buf, stack.count)
                 if (stack.count == 0) return@of
 
-                Registries.ITEM.idCodec.write(buf, Registries.ITEM.resourceKeyByValue(stack.item))
+                val key = Registries.ITEM.resourceKeyByValue(stack.item)
+                Registries.ITEM.idCodec.write(buf, key)
 
                 ItemComponentMap.CODEC.write(buf, stack.components)
             }
@@ -43,6 +47,10 @@ open class ItemStack(val item: Item) {
     }
 
     private var count = 1
+        set(value) {
+            field = max(0, value)
+        }
+
     private var components = ItemComponentMap()
 
     constructor(key: ResourceKey<Item>) : this(Registries.ITEM.getOrThrow(key))
@@ -53,6 +61,8 @@ open class ItemStack(val item: Item) {
         return this
     }
 
+    fun count(): Int = count
+
     fun <T : Any> withComponent(type: ItemComponentType<T>, value: T): ItemStack {
         components.add(type, value)
         return this
@@ -61,6 +71,23 @@ open class ItemStack(val item: Item) {
     fun withComponents(components: ItemComponentMap): ItemStack {
         this.components = components
         return this
+    }
+
+    fun maxStackSize(): Int = (
+            if (components.has(ItemComponentTypes.MAX_STACK_SIZE))
+                components.get(ItemComponentTypes.MAX_STACK_SIZE)
+            else 64)
+
+    fun isSimilar(other: ItemStack): Boolean {
+        if (other === this) return true
+
+        return components.isSimilar(other.components)
+    }
+
+    fun clone(): ItemStack {
+        return ItemStack(item)
+            .withCount(count)
+            .withComponents(components.clone())
     }
 
 }

@@ -33,6 +33,8 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.Style
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import kotlin.math.max
 
@@ -40,6 +42,8 @@ class MinecraftServer {
 
     companion object {
         internal val LOCK = Object()
+
+        val workerPool: ExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
         private val LOGGER: Logger = LoggerFactory.getLogger(MinecraftServer::class.java)
 
@@ -149,12 +153,16 @@ class MinecraftServer {
     fun run(port: Int) {
         running = true;
 
+        worlds.values.forEach {
+            it.generateInRadius(0, 0, serverViewDistance)
+        }
+
         ticker.start()
         server.start(port)
     }
 
     fun shutdown() {
-        require(running) { "Server not running" }
+        if (!running) return
 
         ticker.stop()
         server.stop()

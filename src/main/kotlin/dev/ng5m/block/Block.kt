@@ -1,11 +1,18 @@
 package dev.ng5m.block
 
-import net.kyori.adventure.key.Key
+import dev.ng5m.entity.BlockEntity
+import dev.ng5m.player.Hand
+import dev.ng5m.player.Player
+import dev.ng5m.util.math.Vector3f
+open class Block() {
+    private val allowedStateProperties: MutableSet<BlockStateProperty<*>> = mutableSetOf()
 
-class Block(val id: Key, val allowedStateProperties: Collection<BlockStateProperty<*>>) {
+    fun defaultBlockState(): BlockState = BlockState.stateManager.getDefaultState(this)
 
-    fun getBlockState(): BlockState {
-        return BlockState(id)
-    }
+    open fun getBlockEntity(x: Int, y: Int, z: Int, state: BlockState): BlockEntity? = null
+
+    open fun onInteract(
+        player: Player, hand: Hand, face: Face, cursorPos: Vector3f
+    ) {}
 
 }
