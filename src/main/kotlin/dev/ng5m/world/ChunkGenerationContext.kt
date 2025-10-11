@@ -12,6 +12,7 @@ interface ChunkGenerationContext {
     fun chunkZ(): Int
 
     fun fillHeight(x: Int, z: Int, yRange: IntRange, state: BlockState)
+    fun fillHeight(x: Int, z: Int, yRange: IntRange, block: Block)
 
     fun setBiomeAt(x: Int, y: Int, z: Int, biome: ResourceKey<Biome>)
     fun setBiomeAtCell(x: Int, y: Int, z: Int, biome: ResourceKey<Biome>)

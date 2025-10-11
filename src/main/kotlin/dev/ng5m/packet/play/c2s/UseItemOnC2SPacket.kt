@@ -10,7 +10,7 @@ import dev.ng5m.util.ofEnum
 import dev.ng5m.util.forType
 
 data class UseItemOnC2SPacket(
-    val hand: Hand,
+    val hand: Hand.Relative,
     val blockPos: Vector3i,
     val face: Face,
     val cursorPos: Vector3f,
@@ -20,7 +20,7 @@ data class UseItemOnC2SPacket(
 ) : Packet {
     companion object {
         val CODEC: Codec<UseItemOnC2SPacket> = Codec.of(
-            ofEnum<Hand>(), { it.hand },
+            ofEnum<Hand.Relative>(), { it.hand },
             Vector3i.POSITION, { it.blockPos },
             ofEnum<Face>(), { it.face },
             Vector3f.CODEC_3_FLOATS, { it.cursorPos },

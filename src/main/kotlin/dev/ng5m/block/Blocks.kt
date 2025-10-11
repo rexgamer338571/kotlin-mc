@@ -374,7 +374,7 @@ object Blocks {
 
     val OAK_STAIRS = register(Key.key("minecraft:oak_stairs"))
 
-    val CHEST = register(Key.key("minecraft:chest")) { ChestBlock() }
+    val CHEST = register(Key.key("minecraft:chest")) { ChestBlock }
 
     val REDSTONE_WIRE = register(Key.key("minecraft:redstone_wire"))
 

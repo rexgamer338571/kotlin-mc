@@ -18,7 +18,7 @@ class ChunkSection {
         private const val DIRECT_BLOCKS = 15
         private const val DIRECT_BIOMES = 6
 
-        private val nonNonAirBlocks: Collection<ResourceKey<Block>> =
+        val nonNonAirBlocks: Collection<ResourceKey<Block>> =
             Registries.BLOCK.tags[Key.key("non_non_air")]!!
         private val nonNonAirBlocksRaw: Collection<Int> =
             nonNonAirBlocks.map { Registries.BLOCK.idByKey(it) }.toHashSet()

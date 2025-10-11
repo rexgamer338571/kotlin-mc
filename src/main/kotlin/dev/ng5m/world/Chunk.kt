@@ -11,7 +11,6 @@ import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization.nbt.impl.CompoundTag
 import dev.ng5m.util.bitsToRepresent
 import dev.ng5m.util.mapToValueList
-import org.joml.Vector3i
 import java.util.*
 
 class Chunk(
@@ -92,7 +91,7 @@ class Chunk(
     fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {
         val section: ChunkSection = sections[getSectionY(y)] ?: return
 
-        val blockEntity = state.block.getBlockEntity(x, y, z, state)
+        val blockEntity = state.block.createBlockEntity(x, y, z, state)
         if (blockEntity != null) addBlockEntity(x, y, z, blockEntity)
 
         section.setBlock(x % 16, (y % 16 + 16) % 16, z % 16, BlockState.stateManager.idBy(state))

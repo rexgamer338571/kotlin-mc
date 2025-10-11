@@ -19,21 +19,29 @@ import dev.ng5m.util.math.Vector3i
 import dev.ng5m.util.toNBT
 import net.kyori.adventure.text.Component
 
-class ChestBlock : Block() {
+object ChestBlock : Block() {
     private val name: Component = Component.text("Chest")
-    private val inventory: Inventory = Inventory.createGeneric9x3(name)
 
-    override fun getBlockEntity(x: Int, y: Int, z: Int, state: BlockState): BlockEntity {
+    override fun createBlockEntity(x: Int, y: Int, z: Int, state: BlockState): BlockEntity {
         return BlockEntity(x, y, z, BlockEntityType.CHEST, CompoundTag())
     }
 
-    override fun onInteract(player: Player, hand: Hand, face: Face, cursorPos: Vector3f) {
+    override fun onInteract(player: Player, hand: Hand.Relative, face: Face, cursorPos: Vector3f,
+                            blockEntity: BlockEntity?) {
+        require(blockEntity != null) { "blockEntity is null" }
+        require(blockEntity is ChestBlockEntity) { "blockEntity is not ChestBlockEntity" }
+
         player.sendSystemMessage(Component.text("clicked on chest"))
 
-        if (inventory.slots().any { it != ItemStack.AIR })
-            println(inventory.slots().first { it != ItemStack.AIR }.item.key)
+        if (blockEntity.inventory.slots().any { it != ItemStack.AIR })
+            println(blockEntity.inventory.slots().first { it != ItemStack.AIR }.item.key)
 
-        player.openInventory(inventory)
+        player.openInventory(blockEntity.inventory)
+    }
+
+    class ChestBlockEntity(x: Int, y: Int, z: Int, data: CompoundTag) : BlockEntity(x, y, z, BlockEntityType.CHEST, data) {
+        val inventory: Inventory = Inventory.createGeneric9x3(name)
+
     }
 
 }

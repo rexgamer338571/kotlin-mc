@@ -181,17 +181,22 @@ class MinecraftServer {
         WolfVariants.populate()
         PaintingVariants.populate()
 
-        initClass(Items::class)
-        initClass(ItemComponentTypes::class)
-
         loadBlocks()
+
+        Items.populate()
+
+        initClass(ItemComponentTypes::class)
     }
 
     fun createWorld(type: ResourceKey<DimensionType>, key: Key): World {
         val world = World(type, key)
-        worlds[key] = world
+        addWorld(key, world)
 
         return world
+    }
+
+    internal fun addWorld(key: Key, world: World) {
+        worlds[key] = world
     }
 
     fun getWorld(key: Key): World {

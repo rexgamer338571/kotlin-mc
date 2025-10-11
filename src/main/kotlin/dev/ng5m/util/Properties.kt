@@ -55,6 +55,8 @@ interface Properties {
             return (get(name) ?: return null) as List<T>
         }
 
+
+
         override fun toString(): String {
             if (map.isEmpty()) return "[]"
 
@@ -62,6 +64,20 @@ interface Properties {
             for ((k, v) in map) sb.append("$k=$v, ")
 
             return "${sb.substring(0, sb.length - 2)}]"
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as MapBacked
+
+            for ((k, v) in map) {
+                if (!other.map.containsKey(k)) return false
+                if (map[k] != other.map[k]) return false
+            }
+
+            return true
         }
 
     }

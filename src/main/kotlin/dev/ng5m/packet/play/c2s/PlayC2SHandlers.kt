@@ -87,7 +87,10 @@ object PlayC2SHandlers {
                             player.carriedItem = ItemStack.AIR
                         }
 
-                        1 -> player.carriedItem.withCount(player.carriedItem.count() - 1)
+                        1 -> {
+                            player.dropItem(player.carriedItem.clone().withCount(1))
+                            player.carriedItem.withCount(player.carriedItem.count() - 1)
+                        }
                     }
                 } else {
                     when (button) {
@@ -104,7 +107,8 @@ object PlayC2SHandlers {
                                     } else {
                                         if (itemAt.isSimilar(player.carriedItem)) {
                                             if (itemAt.count() < itemAt.maxStackSize()) {
-                                                val left = player.carriedItem.count() - (itemAt.maxStackSize() - itemAt.count())
+                                                val left =
+                                                    player.carriedItem.count() - (itemAt.maxStackSize() - itemAt.count())
                                                 itemAt.withCount(if (left <= 0) player.carriedItem.count() + itemAt.count() else itemAt.maxStackSize())
                                                 player.carriedItem.withCount(left)
                                             }
@@ -204,7 +208,8 @@ object PlayC2SHandlers {
     }
 
     fun input(connection: MinecraftConnection, packet: PlayerInputC2SPacket) {
-
+        val player = connection.player
+        player.sneaking = packet.flags.sneak
     }
 
     fun loaded(connection: MinecraftConnection, packet: PlayerLoadedC2SPacket) {
@@ -249,9 +254,15 @@ object PlayC2SHandlers {
 
     fun useItemOn(connection: MinecraftConnection, packet: UseItemOnC2SPacket) {
         val world = connection.player.getWorld()
-        val block = world.getBlockAt(packet.blockPos)
+        val pos = packet.blockPos
+        val block = world.getBlockAt(pos)
 
-        block?.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos)
+        val heldStack = connection.player.getItemInHand(packet.hand)
+        heldStack.item.onInteractBlock(heldStack, connection.player, pos, packet.hand, packet.face)
+        if (!connection.player.sneaking) {
+            block?.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos,
+                world.getBlockEntityAt(pos.x, pos.y, pos.z))
+        }
     }
 
     private fun fireMove(player: Player) {

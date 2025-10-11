@@ -51,11 +51,11 @@ open class Registry<T : Any>(
             return Registry(key, T::class.java)
         }
 
-        inline fun <reified T : Any> createNonDataDriven(key: Key): Registry<T> {
+        inline fun <reified T : Any> createInternal(key: Key): Registry<T> {
             return Registry(key, T::class.java, false)
         }
 
-        inline fun <reified T: Any> createNonDataDrivenDefaulted(key: Key, default: Int): DefaultedRegistry<T> {
+        inline fun <reified T: Any> createInternalDefaulted(key: Key, default: Int): DefaultedRegistry<T> {
             return DefaultedRegistry(key, T::class.java, false, default)
         }
     }
@@ -67,7 +67,7 @@ open class Registry<T : Any>(
         TypeToken.getParameterized(Map::class.java, Key::class.java, entryClass) as TypeToken<Map<Key, T>>
 
     private var index = 0;
-    private val map: DoubleMap<MutableMap<Any, Any>, Key, T> = DoubleMap(::LinkedHashMap)
+    val map: DoubleMap<MutableMap<Any, Any>, Key, T> = DoubleMap(::LinkedHashMap)
     private val byRawId: DoubleMap<MutableMap<Any, Any>, Int, T> = DoubleMap(::LinkedHashMap)
 
     val tags: MutableMap<Key, MutableSet<ResourceKey<T>>> = mutableMapOf()
@@ -126,6 +126,8 @@ open class Registry<T : Any>(
     fun randomElement(random: kotlin.random.Random): T {
         return byRawId.getA(random.nextInt(byRawId.size()))
     }
+
+    fun containsKey(key: Key): Boolean = map.containsA(key)
 
     fun init() {
         ROOT[id] = this

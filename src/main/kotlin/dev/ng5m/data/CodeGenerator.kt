@@ -90,8 +90,8 @@ internal fun generateItemCode() {
         .append("object Items {\n")
 
     for (entry in array) {
-        val keyString = "Key.key(\"${entry.asString()}\""
-        sb.append("    val ${entry.value().uppercase()}: ResourceKey<Item> = Registries.ITEM.register($keyString), Item($keyString)))\n\n")
+        val keyString = "Key.key(\"${entry.asString()}\")"
+        sb.append("    val ${entry.value().uppercase()}: ResourceKey<Item> = register($keyString)\n\n")
     }
 
     sb.append("}")

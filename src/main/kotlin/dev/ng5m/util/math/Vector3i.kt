@@ -24,6 +24,13 @@ class Vector3i(var x: Int, var y: Int, var z: Int) {
         )
     }
 
+    operator fun plus(other: Vector3i): Vector3i {
+        x += other.x
+        y += other.y
+        z += other.z
+        return this
+    }
+
     override fun toString(): String {
         return "($x, $y, $z)"
     }

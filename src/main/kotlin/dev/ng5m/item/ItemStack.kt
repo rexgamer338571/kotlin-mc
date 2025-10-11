@@ -7,7 +7,6 @@ import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.Codec
 import kotlin.math.max
-import kotlin.math.min
 
 open class ItemStack(val item: Item) {
     companion object {

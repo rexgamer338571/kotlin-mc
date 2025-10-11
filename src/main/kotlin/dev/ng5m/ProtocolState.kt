@@ -119,6 +119,7 @@ class ProtocolState {
 
             register(0x01, SpawnEntityS2CPacket::class)
             register(0x03, AnimateS2CPacket::class)
+            register(0x09, BlockUpdateS2CPacket::class)
             register(0x13, SetContainerContentsS2CPacket::class)
             register(0x15, SetContainerSlotS2CPacket::class).excludeFromLogging()
             register(0x19, PluginMessagePacket::class)

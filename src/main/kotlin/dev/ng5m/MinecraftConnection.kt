@@ -114,9 +114,11 @@ abstract class MinecraftConnection : Ticking {
         close()
         if (::player.isInitialized) {
             MinecraftServer.getInstance().removeConnection(this)
-            player.getWorld().removeEntity(player)
-            player.getOtherPlayers().forEach {
-                it.connection.sendPacket(PlayerInfoRemoveS2CPacket(player.getIdentity().getAdequateUUID()))
+            if (player.isSpawned()) {
+                player.getWorld().removeEntity(player)
+                player.getOtherPlayers().forEach {
+                    it.connection.sendPacket(PlayerInfoRemoveS2CPacket(player.getIdentity().getAdequateUUID()))
+                }
             }
         }
     }

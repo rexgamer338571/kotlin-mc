@@ -7,7 +7,7 @@ import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization.nbt.Tag
 import dev.ng5m.util.math.Vector2i
 
-class BlockEntity(val x: Int, val y: Int, val z: Int, val type: ResourceKey<BlockEntityType>, val data: Tag<*>) {
+open class BlockEntity(val x: Int, val y: Int, val z: Int, val type: ResourceKey<BlockEntityType>, val data: Tag<*>) {
     companion object {
         private val CODEC_PACKED_XZ: Codec<Vector2i> = Codec.of(
             { buf ->

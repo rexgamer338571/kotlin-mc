@@ -2,13 +2,10 @@ package dev.ng5m.registry
 
 import dev.ng5m.EnchantmentType
 import dev.ng5m.block.Block
-import dev.ng5m.block.BlockState
-import dev.ng5m.block.Blocks
 import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.entity.EntityType
 import dev.ng5m.entity.inventory.InventoryType
 import dev.ng5m.item.Item
-import dev.ng5m.item.Items
 import dev.ng5m.item.component.ItemComponentType
 import net.kyori.adventure.key.Key
 
@@ -32,13 +29,13 @@ object Registries {
     val PAINTING_VARIANT: Registry<PaintingVariant> = Registry.create(Key.key("painting_variant"))
 
 
-    val BLOCK: Registry<Block> = Registry.createNonDataDriven(Key.key("block"))
-    val ENTITY_TYPE: Registry<EntityType> = Registry.createNonDataDriven(Key.key("entity_type"))
-    val BLOCK_ENTITY_TYPE: Registry<BlockEntityType> = Registry.createNonDataDriven(Key.key("block_entity_type"))
-    val ITEM: DefaultedRegistry<Item> = Registry.createNonDataDrivenDefaulted(Key.key("item"), 0)
-    val ITEM_COMPONENT_TYPE: Registry<ItemComponentType<*>> = Registry.createNonDataDriven(Key.key("data_component_type"))
-    val ENCHANTMENT: Registry<EnchantmentType> = Registry.createNonDataDriven(Key.key("enchantment"))
-    val MENU: Registry<InventoryType> = Registry.createNonDataDriven(Key.key("menu"))
+    val BLOCK: Registry<Block> = Registry.createInternal(Key.key("block"))
+    val ENTITY_TYPE: Registry<EntityType> = Registry.createInternal(Key.key("entity_type"))
+    val BLOCK_ENTITY_TYPE: Registry<BlockEntityType> = Registry.createInternal(Key.key("block_entity_type"))
+    val ITEM: DefaultedRegistry<Item> = Registry.createInternalDefaulted(Key.key("item"), 0)
+    val ITEM_COMPONENT_TYPE: Registry<ItemComponentType<*>> = Registry.createInternal(Key.key("data_component_type"))
+    val ENCHANTMENT: Registry<EnchantmentType> = Registry.createInternal(Key.key("enchantment"))
+    val MENU: Registry<InventoryType> = Registry.createInternal(Key.key("menu"))
     fun init() {
         // empty because it's here to init the class
     }

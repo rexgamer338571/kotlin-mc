@@ -22,7 +22,8 @@ fun loadBlocks() {
     for (field in Blocks::class.declaredMemberProperties) {
         val v = field.get(Blocks) as Block
 
-        val blockObj = obj[Registries.BLOCK.keyByValue(v).toString()] ?: continue
+        val key = Registries.BLOCK.keyByValue(v).toString()
+        val blockObj = obj[key] ?: continue
 
         var def: BlockState? = null
         for (state in blockObj.states) {

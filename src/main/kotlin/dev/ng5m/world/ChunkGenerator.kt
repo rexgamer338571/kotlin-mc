@@ -1,11 +1,8 @@
 package dev.ng5m.world
 
-interface ChunkGenerator {
+fun interface ChunkGenerator {
     companion object {
-        val EMPTY = object : ChunkGenerator {
-            override fun generate(context: ChunkGenerationContext) {
-            }
-        }
+        val EMPTY = ChunkGenerator { }
     }
 
     fun generate(context: ChunkGenerationContext)

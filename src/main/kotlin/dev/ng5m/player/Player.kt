@@ -70,7 +70,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     private var deathLocation: Location? = null
 
-    private val viewedChunks: MutableSet<Int> = mutableSetOf()
+    private val viewedChunks: MutableSet<Long> = mutableSetOf()
 
     var sprinting = false
     var sneaking = false
@@ -128,6 +128,12 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
             dropItem(item.withCount(1))
             inventory.hotbar(heldItem, item.withCount(count - 1))
         }
+    }
+
+    fun getItemInHand(hand: Hand.Relative): ItemStack {
+        return if (hand == Hand.Relative.MAIN_HAND)
+            inventory.hotbar(heldItem)
+        else inventory.offhand()
     }
 
     fun generateAndSendChunksAround() {
@@ -189,7 +195,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     private fun packDelta(d: Double): Double = round(d * 4096.0)
 
-    private fun chunkRadius(radius: Int, rootX: Int, rootZ: Int, set: MutableSet<Int>) {
+    private fun chunkRadius(radius: Int, rootX: Int, rootZ: Int, set: MutableSet<Long>) {
         for (cx in rootX - radius .. rootZ + radius)
             for (cz in rootZ - radius .. rootZ + radius)
                 set.add(World.packChunkCoordinates(cx, cz))
@@ -237,7 +243,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
         connection.sendPacket(SetCenterChunkS2CPacket(playerChunkXZ.x, playerChunkXZ.y))
 
-        val current = mutableSetOf<Int>()
+        val current = mutableSetOf<Long>()
         chunkRadius(vd, playerChunkXZ.x, playerChunkXZ.y, current)
 
         for (pos in viewedChunks subtract current) {

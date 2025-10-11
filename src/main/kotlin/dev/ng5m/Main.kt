@@ -3,7 +3,6 @@ package dev.ng5m
 import de.articdive.jnoise.core.api.functions.Interpolation
 import de.articdive.jnoise.generators.noise_parameters.fade_functions.FadeFunction
 import de.articdive.jnoise.pipeline.JNoise
-import dev.ng5m.block.BlockState
 import dev.ng5m.block.Blocks
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.BlockEntityType
@@ -18,16 +17,11 @@ import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionTypes
 import dev.ng5m.registry.Registries
 import dev.ng5m.serialization_kt.Either
-import dev.ng5m.serialization_kt.nbt.impl.CompoundTag
 import dev.ng5m.util.TypeArguments
-import dev.ng5m.util.math.Vector3i
 import dev.ng5m.world.*
-import dev.ng5m.world.anvil.AnvilLoader
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import java.nio.file.Path
-import kotlin.io.path.Path
 import kotlin.random.Random
 
 
@@ -64,6 +58,8 @@ fun main() {
 //    AnvilLoader(Path.of("/home/ng5m/.local/share/multimc/instances/1.21.4 fabric/.minecraft/saves/New World"))
 //        .load()
 
+//    if (true) return
+
 //    Thread.sleep(25000)
 
 
@@ -71,7 +67,7 @@ fun main() {
 
 //    Chunk.test()
 
-    val world = server.createWorld(DimensionTypes.THE_NETHER, Key.key("test", "test"))
+    val world = server.createWorld(DimensionTypes.OVERWORLD, Key.key("test", "test"))
 
     val tabList = TabList()
 
@@ -131,71 +127,83 @@ fun main() {
         .scale(0.03)
         .build()
 
-    val coolGenerator = object : ChunkGenerator {
-        override fun generate(context: ChunkGenerationContext) {
-            val wx = context.chunkX() * 16
-            val wz = context.chunkZ() * 16
+    val coolGenerator = ChunkGenerator { context ->
+        val wx = context.chunkX() * 16
+        val wz = context.chunkZ() * 16
 
-            for (bx in 0 until 16) {
-                for (bz in 0 until 16) {
-                    val y = (30 + noise.evaluateNoise((wx.toDouble() + bx), (wz.toDouble() + bz)) * 20).toInt()
-                    context.fillHeight(
-                        bx, bz, 0..y, Blocks.STONE.defaultBlockState()
-                    )
+        for (bx in 0 until 16) {
+            for (bz in 0 until 16) {
+                val y = (30 + noise.evaluateNoise((wx.toDouble() + bx), (wz.toDouble() + bz)) * 20).toInt()
+                context.fillHeight(
+                    bx, bz, 0..y, Blocks.STONE.defaultBlockState()
+                )
 
-                    context.fillHeight(bx, bz, y..y + 2, Blocks.DIRT.defaultBlockState())
+                context.fillHeight(bx, bz, y..y + 2, Blocks.DIRT.defaultBlockState())
 //                    context.setBlockStateAt(bx, bz, y + 3..y+4, Blocks.GRASS_BLOCK.defaultBlockState())
-                    context.setBlockAt(bx, y + 10, bz, Blocks.GOLD_BLOCK)
+                context.setBlockAt(bx, y + 10, bz, Blocks.GOLD_BLOCK)
 
-                }
             }
+        }
 
 //            context.fillBiome(customBiome)
-            context.setBlockAt(0, 50, 0, Blocks.CHEST)
-        }
+        context.setBlockAt(0, 50, 0, Blocks.CHEST)
     }
 
-    val randomChunkGenerator = object : ChunkGenerator {
-        override fun generate(context: ChunkGenerationContext) {
-            val wx = context.chunkX() * 16
-            val wz = context.chunkZ() * 16
+    val randomChunkGenerator = ChunkGenerator { context ->
+        val wx = context.chunkX() * 16
+        val wz = context.chunkZ() * 16
 
-            for (bx in 0 until 16) {
-                for (by in 0 until 16) {
-                    for (bz in 0 until 16) {
-                        context.setBlockStateAt(bx, by, bz, Blocks.BEDROCK.defaultBlockState())
-                    }
+        for (bx in 0 until 16) {
+            for (by in 0 until 16) {
+                for (bz in 0 until 16) {
+                    context.setBlockStateAt(bx, by, bz, Blocks.BEDROCK.defaultBlockState())
                 }
             }
-
-            for (cx in 0 until 16) {
-                for (cy in 0 until 256) {
-                    for (cz in 0 until 16) {
-                        context.setBiomeAt(cx, cy, cz, customBiome)
-                    }
-                }
-            }
-
-            context.setBlockAt(0, 40, 0, Blocks.CHEST)
         }
+
+        for (cx in 0 until 16) {
+            for (cy in 0 until 256) {
+                for (cz in 0 until 16) {
+                    context.setBiomeAt(cx, cy, cz, customBiome)
+                }
+            }
+        }
+
+        context.setBlockAt(0, 40, 0, Blocks.CHEST)
     }
 
-    world.chunkGenerator = coolGenerator
+    val flatGenerator = ChunkGenerator { context ->
+        for (bx in 0 until 16) {
+            for (bz in 0 until 16) {
+                context.setBlockAt(bx, 0, bz, Blocks.BEDROCK)
+                context.fillHeight(bx, bz, 1..4, Blocks.DIRT)
+                context.setBlockAt(bx, 5, bz, Blocks.GRASS_BLOCK)
+            }
+        }
+
+        context.setBlockAt(0, 6, 0, Blocks.CHEST)
+    }
+
+    world.chunkGenerator = flatGenerator
+
+//    val world = MinecraftServer.getInstance().getWorlds().first()
 
     EventManager.register(PlayerPreJoinEvent::class.java) {
         it.player.setWorld(world)
-        it.player.location = Location(world, 0.0, 200.0, 0.0)
+        it.player.location = Location(world, 0.0, 7.0, 0.0)
         it.player.gameMode = GameMode.CREATIVE
 
-        for (i in 0 until 46) {
-            it.player.inventory.setItem(
-                i, ItemStack(
-                    Registries.ITEM.randomElement(random)
-                ).withCount(10)
-            )
-        }
+//        for (i in 0 until 46) {
+//            it.player.inventory.setItem(
+//                i, ItemStack(
+//                    Registries.ITEM.randomElement(random)
+//                ).withCount(10)
+//            )
+//        }
 
-        it.player.inventory.chest(ItemStack.AIR)
+        it.player.inventory.hotbar(0, ItemStack(Items.STONE).withCount(64))
+        it.player.inventory.hotbar(1, ItemStack(Items.WATER_BUCKET))
+//        it.player.inventory.chest(ItemStack.AIR)
     }
 
     EventManager.register(PlayerJoinEvent::class.java) {

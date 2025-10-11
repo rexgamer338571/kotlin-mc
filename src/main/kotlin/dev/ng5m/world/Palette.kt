@@ -42,7 +42,7 @@ class Palette(
         directBits: Int
     ) : this(size, values, LongArrayList.wrap(data), minBits, maxBits, directBits)
 
-    internal var bits = 4
+    internal var bits = minBits
 
     private var entriesPerLong = 64 / bits
     private val reverse = Int2IntOpenHashMap()

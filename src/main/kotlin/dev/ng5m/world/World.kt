@@ -3,6 +3,8 @@ package dev.ng5m.world
 import dev.ng5m.MinecraftServer
 import dev.ng5m.block.Block
 import dev.ng5m.block.BlockState
+import dev.ng5m.block.Blocks
+import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.Entity
 import dev.ng5m.entity.ItemEntity
 import dev.ng5m.item.ItemStack
@@ -26,11 +28,11 @@ import kotlin.math.floor
 
 class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     companion object {
-        fun packChunkCoordinates(x: Int, z: Int, precision: Int = 16): Int =
-            (x shl precision) or (z and ((1 shl precision) - 1))
+        fun packChunkCoordinates(x: Int, z: Int, precision: Int = 32): Long =
+            (x.toLong() shl precision) or (z.toLong() and ((1L shl precision) - 1L))
 
-        fun unpackChunkCoordinates(packed: Int, precision: Int = 16): Pair<Int, Int> =
-            (packed shr precision) to (packed and ((1 shl precision) - 1))
+        fun unpackChunkCoordinates(packed: Long, precision: Int = 32): Pair<Int, Int> =
+            (packed shr precision).toInt() to (packed and ((1L shl precision) - 1L)).toInt()
     }
 
     private val type: DimensionType = Registries.DIMENSION_TYPE.getOrThrow(typeKey)
@@ -41,7 +43,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     )
     private val entities: MutableSet<Entity> = mutableSetOf()
 
-    private val chunks: MutableMap<Int, Chunk?> = mutableMapOf()
+    private val chunks: MutableMap<Long, Chunk?> = mutableMapOf()
     var chunkProvider: ChunkProvider = ChunkProvider.EMPTY
     var chunkGenerator: ChunkGenerator = ChunkGenerator.EMPTY
 
@@ -91,6 +93,15 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
             override fun fillHeight(x: Int, z: Int, yRange: IntRange, state: BlockState) {
                 for (y in yRange) chunk.setBlockStateAt(x, y, z, state)
+            }
+
+            override fun fillHeight(
+                x: Int,
+                z: Int,
+                yRange: IntRange,
+                block: Block
+            ) {
+                fillHeight(x, z, yRange, block.defaultBlockState())
             }
 
             override fun setBiomeAt(x: Int, y: Int, z: Int, biome: ResourceKey<Biome>) {
@@ -150,14 +161,32 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
 
 
-    fun getBlockAt(x: Int, y: Int, z: Int): Block? {
+    fun getBlockAt(x: Int, y: Int, z: Int): Block {
+        val cx = floor(x / 16.0).toInt()
+        val cz = floor(z / 16.0).toInt()
+        val chunk = chunks[packChunkCoordinates(cx, cz)] ?: return Blocks.AIR
+        val state = chunk.getBlockStateAt(x % 16, y, z % 16)
+
+        return state.block
+    }
+
+    fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {
         val cx = floor(x / 16.0).toInt()
         val cz = floor(z / 16.0).toInt()
 
-        return (chunks[packChunkCoordinates(cx, cz)]?.getBlockStateAt(x % 16, y, z % 16)?.block)
+        chunks[packChunkCoordinates(cx, cz)]?.setBlockStateAt(x % 16, y, z % 16, state)
     }
 
+    fun setBlockStateAt(pos: Vector3i, state: BlockState) = setBlockStateAt(pos.x, pos.y, pos.x, state)
+
     fun getBlockAt(pos: Vector3i): Block? = getBlockAt(pos.x, pos.y, pos.z)
+
+    fun getBlockEntityAt(x: Int, y: Int, z: Int): BlockEntity? {
+        val cx = floor(x / 16.0).toInt()
+        val cz = floor(z / 16.0).toInt()
+
+        return (chunks[packChunkCoordinates(cx, cz)]?.getBlockEntity(x % 16, y, z % 16))
+    }
 
     fun dropItem(pos: Vector3d, stack: ItemStack) {
         val item = ItemEntity(stack)

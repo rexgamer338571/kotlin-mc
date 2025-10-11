@@ -6,8 +6,6 @@ import dev.ng5m.serialization.Codec
 import dev.ng5m.util.math.Vector3f
 import dev.ng5m.util.math.Vector3i
 import net.kyori.adventure.key.Key
-import java.util.function.BiConsumer
-import java.util.function.BiFunction
 
 class EntityMetadata {
     @Suppress("UNCHECKED_CAST")
@@ -52,7 +50,7 @@ class EntityMetadata {
 
     data class Type<T>(val codec: Codec<T>) {
         companion object {
-            val registry = Registry.createNonDataDriven<Type<*>>(Key.key("kmc", "entity_metadata_type"))
+            val registry = Registry.createInternal<Type<*>>(Key.key("kmc", "entity_metadata_type"))
             val BYTE = register("byte", Codec.BYTE)
             val VARINT = register("varint", Codec.VARINT)
             val VARLONG = register("varlong", Codec.VARLONG)
