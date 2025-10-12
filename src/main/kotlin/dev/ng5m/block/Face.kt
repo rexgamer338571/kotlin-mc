@@ -1,6 +1,7 @@
 package dev.ng5m.block
 
-import dev.ng5m.util.math.Vector3i
+import org.joml.Vector3i
+
 
 enum class Face(val direction: Vector3i) {
     BOTTOM(Vector3i(0, -1, 0)),

@@ -3,6 +3,7 @@ package dev.ng5m.entity
 import dev.ng5m.item.ItemStack
 import dev.ng5m.registry.Registry
 import dev.ng5m.serialization.Codec
+import dev.ng5m.util.CODEC_POSITION
 import dev.ng5m.util.math.Vector3f
 import dev.ng5m.util.math.Vector3i
 import net.kyori.adventure.key.Key
@@ -61,8 +62,8 @@ class EntityMetadata {
             val SLOT = register("item_stack", ItemStack.CODEC)
             val BOOLEAN = register("boolean", Codec.BOOLEAN)
             val ROTATIONS = register("rotations", Vector3f.CODEC_3_FLOATS)
-            val POSITION = register("position", Vector3i.POSITION)
-            val OPTIONAL_POSITION = register("optional_position", Vector3i.POSITION.prefixedOptional())
+            val POSITION = register("position", CODEC_POSITION)
+            val OPTIONAL_POSITION = register("optional_position", CODEC_POSITION.prefixedOptional())
 
             private fun <T> register(id: String, codec: Codec<T>): Type<T> {
                 val type = Type(codec)

@@ -8,6 +8,10 @@ import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.AnimateS2CPacket
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
+import dev.ng5m.util.math.Vector3i
+import dev.ng5m.util.toDoubles
+import dev.ng5m.util.toInts
+import dev.ng5m.world.Location
 import net.kyori.adventure.text.Component
 
 object PlayC2SHandlers {
@@ -258,9 +262,9 @@ object PlayC2SHandlers {
         val block = world.getBlockAt(pos)
 
         val heldStack = connection.player.getItemInHand(packet.hand)
-        heldStack.item.onInteractBlock(heldStack, connection.player, pos, packet.hand, packet.face)
+        heldStack.item.onInteractBlock(heldStack, connection.player, Location(world, pos), packet.hand, packet.face)
         if (!connection.player.sneaking) {
-            block?.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos,
+            block.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos,
                 world.getBlockEntityAt(pos.x, pos.y, pos.z))
         }
     }

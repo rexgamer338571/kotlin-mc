@@ -4,6 +4,7 @@ import dev.ng5m.block.Face
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
 import dev.ng5m.util.math.Vector3i
+import dev.ng5m.world.Location
 import net.kyori.adventure.key.Key
 
 open class Item(val key: Key) {
@@ -11,7 +12,7 @@ open class Item(val key: Key) {
         val UNDEFINED = Item(Key.key("undefined"))
     }
 
-    open fun onInteractBlock(stack: ItemStack, player: Player, blockPos: Vector3i, hand: Hand.Relative, blockFace: Face) {
+    open fun onInteractBlock(stack: ItemStack, player: Player, location: Location, hand: Hand.Relative, blockFace: Face) {
     }
 
     enum class Rarity {

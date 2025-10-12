@@ -4,8 +4,10 @@ import dev.ng5m.block.Face
 import dev.ng5m.player.Hand
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
-import dev.ng5m.util.math.Vector3f
-import dev.ng5m.util.math.Vector3i
+import dev.ng5m.util.CODEC_POSITION
+import dev.ng5m.util.CODEC_VECTOR3F
+import org.joml.Vector3f
+import org.joml.Vector3i
 import dev.ng5m.util.ofEnum
 import dev.ng5m.util.forType
 
@@ -21,9 +23,9 @@ data class UseItemOnC2SPacket(
     companion object {
         val CODEC: Codec<UseItemOnC2SPacket> = Codec.of(
             ofEnum<Hand.Relative>(), { it.hand },
-            Vector3i.POSITION, { it.blockPos },
+            CODEC_POSITION, { it.blockPos },
             ofEnum<Face>(), { it.face },
-            Vector3f.CODEC_3_FLOATS, { it.cursorPos },
+            CODEC_VECTOR3F, { it.cursorPos },
             Codec.BOOLEAN, { it.playerInsideBlock },
             Codec.BOOLEAN, { it.worldBorderHit },
             Codec.VARINT, { it.sequence },

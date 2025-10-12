@@ -4,7 +4,8 @@ import dev.ng5m.player.Player
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
 import dev.ng5m.serialization.annotation.BitMask
-import dev.ng5m.util.math.Vector3d
+import dev.ng5m.util.CODEC_VECTOR3D
+import org.joml.Vector3d
 
 data class PlayerPosS2CPacket(
     val teleportID: Int,
@@ -17,8 +18,8 @@ data class PlayerPosS2CPacket(
     companion object {
         val CODEC: Codec<PlayerPosS2CPacket> = Codec.of(
             Codec.VARINT, { it.teleportID },
-            Vector3d.CODEC_3_DOUBLES, { it.xyz },
-            Vector3d.CODEC_3_DOUBLES, { it.velocity },
+            CODEC_VECTOR3D, { it.xyz },
+            CODEC_VECTOR3D, { it.velocity },
             Codec.FLOAT, { it.yaw },
             Codec.FLOAT, { it.pitch },
             Flags.CODEC, { it.flags },

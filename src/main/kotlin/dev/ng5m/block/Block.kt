@@ -4,7 +4,7 @@ import dev.ng5m.entity.BlockEntity
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries
-import dev.ng5m.util.math.Vector3f
+import org.joml.Vector3f
 import dev.ng5m.world.ChunkSection
 
 open class Block() {

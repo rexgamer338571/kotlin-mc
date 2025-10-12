@@ -7,7 +7,7 @@ import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.util.AABB
 import dev.ng5m.util.IntTracker
-import dev.ng5m.util.math.Vector3d
+import org.joml.Vector3d
 import dev.ng5m.world.Location
 import dev.ng5m.world.World
 import java.util.UUID
@@ -23,11 +23,9 @@ open class Entity(private val type: EntityType) : Ticking {
         this.id = id
     }
 
-    constructor(typeKey: ResourceKey<EntityType>) : this(Registries.ENTITY_TYPE.getOrThrow(typeKey)) {
-        this.id = ID_TRACKER.next()
-    }
+    constructor(typeKey: ResourceKey<EntityType>) : this(Registries.ENTITY_TYPE.getOrThrow(typeKey))
 
-    private var id by Delegates.notNull<Int>()
+    private var id = ID_TRACKER.next()
     val uuid: UUID = UUID.randomUUID()
     private lateinit var world: World
 
@@ -36,7 +34,7 @@ open class Entity(private val type: EntityType) : Ticking {
 
     lateinit var location: Location
     lateinit var previousLocation: Location
-    var velocity = Vector3d.ZERO
+    var velocity = Vector3d(0.0, 0.0, 0.0)
 
     var health: Double = type.defaultHealth
 
@@ -73,7 +71,7 @@ open class Entity(private val type: EntityType) : Ticking {
         age++
 
         if (::location.isInitialized && ::previousLocation.isInitialized)
-            velocity = location.xyz.clone() - previousLocation.xyz
+            velocity = location.clone().xyz.sub(previousLocation.xyz)
 
         if (::location.isInitialized) previousLocation = location
     }

@@ -1,13 +1,14 @@
 package dev.ng5m.item
 
+import dev.ng5m.entity.EntityType
 import net.kyori.adventure.key.Key
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 
 object Items {
-    private var map: MutableMap<Key, Item> = mutableMapOf()
+    private var map: MutableMap<Key, Item?> = mutableMapOf()
 
-    val AIR: ResourceKey<Item> = register(Key.key("minecraft:air"))
+    val AIR: ResourceKey<Item> = register(Key.key("minecraft:air"), AirItem)
 
     val STONE: ResourceKey<Item> = register(Key.key("minecraft:stone"))
 
@@ -2121,167 +2122,167 @@ object Items {
 
     val GLISTERING_MELON_SLICE: ResourceKey<Item> = register(Key.key("minecraft:glistering_melon_slice"))
 
-    val ARMADILLO_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:armadillo_spawn_egg"))
+    val ARMADILLO_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:armadillo_spawn_egg")) { SpawnEggItem(it, EntityType.ARMADILLO) }
 
-    val ALLAY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:allay_spawn_egg"))
+    val ALLAY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:allay_spawn_egg")) { SpawnEggItem(it, EntityType.ALLAY) }
 
-    val AXOLOTL_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:axolotl_spawn_egg"))
+    val AXOLOTL_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:axolotl_spawn_egg")) { SpawnEggItem(it, EntityType.AXOLOTL) }
 
-    val BAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bat_spawn_egg"))
+    val BAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bat_spawn_egg")) { SpawnEggItem(it, EntityType.BAT) }
 
-    val BEE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bee_spawn_egg"))
+    val BEE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bee_spawn_egg")) { SpawnEggItem(it, EntityType.BEE) }
 
-    val BLAZE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:blaze_spawn_egg"))
+    val BLAZE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:blaze_spawn_egg")) { SpawnEggItem(it, EntityType.BLAZE) }
 
-    val BOGGED_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bogged_spawn_egg"))
+    val BOGGED_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:bogged_spawn_egg")) { SpawnEggItem(it, EntityType.BOGGED) }
 
-    val BREEZE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:breeze_spawn_egg"))
+    val BREEZE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:breeze_spawn_egg")) { SpawnEggItem(it, EntityType.BREEZE) }
 
-    val CAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cat_spawn_egg"))
+    val CAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cat_spawn_egg")) { SpawnEggItem(it, EntityType.CAT) }
 
-    val CAMEL_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:camel_spawn_egg"))
+    val CAMEL_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:camel_spawn_egg")) { SpawnEggItem(it, EntityType.CAMEL) }
 
-    val CAVE_SPIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cave_spider_spawn_egg"))
+    val CAVE_SPIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cave_spider_spawn_egg")) { SpawnEggItem(it, EntityType.CAVE_SPIDER) }
 
-    val CHICKEN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:chicken_spawn_egg"))
+    val CHICKEN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:chicken_spawn_egg")) { SpawnEggItem(it, EntityType.CHICKEN) }
 
-    val COD_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cod_spawn_egg"))
+    val COD_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cod_spawn_egg")) { SpawnEggItem(it, EntityType.COD) }
 
-    val COW_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cow_spawn_egg"))
+    val COW_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:cow_spawn_egg")) { SpawnEggItem(it, EntityType.COW) }
 
-    val CREEPER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:creeper_spawn_egg"))
+    val CREEPER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:creeper_spawn_egg")) { SpawnEggItem(it, EntityType.CREEPER) }
 
-    val DOLPHIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:dolphin_spawn_egg"))
+    val DOLPHIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:dolphin_spawn_egg")) { SpawnEggItem(it, EntityType.DOLPHIN) }
 
-    val DONKEY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:donkey_spawn_egg"))
+    val DONKEY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:donkey_spawn_egg")) { SpawnEggItem(it, EntityType.DONKEY) }
 
-    val DROWNED_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:drowned_spawn_egg"))
+    val DROWNED_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:drowned_spawn_egg")) { SpawnEggItem(it, EntityType.DROWNED) }
 
-    val ELDER_GUARDIAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:elder_guardian_spawn_egg"))
+    val ELDER_GUARDIAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:elder_guardian_spawn_egg")) { SpawnEggItem(it, EntityType.ELDER_GUARDIAN) }
 
-    val ENDER_DRAGON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ender_dragon_spawn_egg"))
+    val ENDER_DRAGON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ender_dragon_spawn_egg")) { SpawnEggItem(it, EntityType.ENDER_DRAGON) }
 
-    val ENDERMAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:enderman_spawn_egg"))
+    val ENDERMAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:enderman_spawn_egg")) { SpawnEggItem(it, EntityType.ENDERMAN) }
 
-    val ENDERMITE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:endermite_spawn_egg"))
+    val ENDERMITE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:endermite_spawn_egg")) { SpawnEggItem(it, EntityType.ENDERMITE) }
 
-    val EVOKER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:evoker_spawn_egg"))
+    val EVOKER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:evoker_spawn_egg")) { SpawnEggItem(it, EntityType.EVOKER) }
 
-    val FOX_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:fox_spawn_egg"))
+    val FOX_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:fox_spawn_egg")) { SpawnEggItem(it, EntityType.FOX) }
 
-    val FROG_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:frog_spawn_egg"))
+    val FROG_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:frog_spawn_egg")) { SpawnEggItem(it, EntityType.FROG) }
 
-    val GHAST_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ghast_spawn_egg"))
+    val GHAST_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ghast_spawn_egg")) { SpawnEggItem(it, EntityType.GHAST) }
 
-    val GLOW_SQUID_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:glow_squid_spawn_egg"))
+    val GLOW_SQUID_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:glow_squid_spawn_egg")) { SpawnEggItem(it, EntityType.GLOW_SQUID) }
 
-    val GOAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:goat_spawn_egg"))
+    val GOAT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:goat_spawn_egg")) { SpawnEggItem(it, EntityType.GOAT) }
 
-    val GUARDIAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:guardian_spawn_egg"))
+    val GUARDIAN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:guardian_spawn_egg")) { SpawnEggItem(it, EntityType.GUARDIAN) }
 
-    val HOGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:hoglin_spawn_egg"))
+    val HOGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:hoglin_spawn_egg")) { SpawnEggItem(it, EntityType.HOGLIN) }
 
-    val HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:horse_spawn_egg"))
+    val HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:horse_spawn_egg")) { SpawnEggItem(it, EntityType.HORSE) }
 
-    val HUSK_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:husk_spawn_egg"))
+    val HUSK_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:husk_spawn_egg")) { SpawnEggItem(it, EntityType.HUSK) }
 
-    val IRON_GOLEM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:iron_golem_spawn_egg"))
+    val IRON_GOLEM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:iron_golem_spawn_egg")) { SpawnEggItem(it, EntityType.IRON_GOLEM) }
 
-    val LLAMA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:llama_spawn_egg"))
+    val LLAMA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:llama_spawn_egg")) { SpawnEggItem(it, EntityType.LLAMA) }
 
-    val MAGMA_CUBE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:magma_cube_spawn_egg"))
+    val MAGMA_CUBE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:magma_cube_spawn_egg")) { SpawnEggItem(it, EntityType.MAGMA_CUBE) }
 
-    val MOOSHROOM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:mooshroom_spawn_egg"))
+    val MOOSHROOM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:mooshroom_spawn_egg")) { SpawnEggItem(it, EntityType.MOOSHROOM) }
 
-    val MULE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:mule_spawn_egg"))
+    val MULE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:mule_spawn_egg")) { SpawnEggItem(it, EntityType.MULE) }
 
-    val OCELOT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ocelot_spawn_egg"))
+    val OCELOT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ocelot_spawn_egg")) { SpawnEggItem(it, EntityType.OCELOT) }
 
-    val PANDA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:panda_spawn_egg"))
+    val PANDA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:panda_spawn_egg")) { SpawnEggItem(it, EntityType.PANDA) }
 
-    val PARROT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:parrot_spawn_egg"))
+    val PARROT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:parrot_spawn_egg")) { SpawnEggItem(it, EntityType.PARROT) }
 
-    val PHANTOM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:phantom_spawn_egg"))
+    val PHANTOM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:phantom_spawn_egg")) { SpawnEggItem(it, EntityType.PHANTOM) }
 
-    val PIG_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pig_spawn_egg"))
+    val PIG_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pig_spawn_egg")) { SpawnEggItem(it, EntityType.PIG) }
 
-    val PIGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:piglin_spawn_egg"))
+    val PIGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:piglin_spawn_egg")) { SpawnEggItem(it, EntityType.PIGLIN) }
 
-    val PIGLIN_BRUTE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:piglin_brute_spawn_egg"))
+    val PIGLIN_BRUTE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:piglin_brute_spawn_egg")) { SpawnEggItem(it, EntityType.PIGLIN_BRUTE) }
 
-    val PILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pillager_spawn_egg"))
+    val PILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pillager_spawn_egg")) { SpawnEggItem(it, EntityType.PILLAGER) }
 
-    val POLAR_BEAR_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:polar_bear_spawn_egg"))
+    val POLAR_BEAR_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:polar_bear_spawn_egg")) { SpawnEggItem(it, EntityType.POLAR_BEAR) }
 
-    val PUFFERFISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pufferfish_spawn_egg"))
+    val PUFFERFISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:pufferfish_spawn_egg")) { SpawnEggItem(it, EntityType.PUFFERFISH) }
 
-    val RABBIT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:rabbit_spawn_egg"))
+    val RABBIT_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:rabbit_spawn_egg")) { SpawnEggItem(it, EntityType.RABBIT) }
 
-    val RAVAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ravager_spawn_egg"))
+    val RAVAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:ravager_spawn_egg")) { SpawnEggItem(it, EntityType.RAVAGER) }
 
-    val SALMON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:salmon_spawn_egg"))
+    val SALMON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:salmon_spawn_egg")) { SpawnEggItem(it, EntityType.SALMON) }
 
-    val SHEEP_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:sheep_spawn_egg"))
+    val SHEEP_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:sheep_spawn_egg")) { SpawnEggItem(it, EntityType.SHEEP) }
 
-    val SHULKER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:shulker_spawn_egg"))
+    val SHULKER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:shulker_spawn_egg")) { SpawnEggItem(it, EntityType.SHULKER) }
 
-    val SILVERFISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:silverfish_spawn_egg"))
+    val SILVERFISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:silverfish_spawn_egg")) { SpawnEggItem(it, EntityType.SILVERFISH) }
 
-    val SKELETON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:skeleton_spawn_egg"))
+    val SKELETON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:skeleton_spawn_egg")) { SpawnEggItem(it, EntityType.SKELETON) }
 
-    val SKELETON_HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:skeleton_horse_spawn_egg"))
+    val SKELETON_HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:skeleton_horse_spawn_egg")) { SpawnEggItem(it, EntityType.SKELETON_HORSE) }
 
-    val SLIME_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:slime_spawn_egg"))
+    val SLIME_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:slime_spawn_egg")) { SpawnEggItem(it, EntityType.SLIME) }
 
-    val SNIFFER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:sniffer_spawn_egg"))
+    val SNIFFER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:sniffer_spawn_egg")) { SpawnEggItem(it, EntityType.SNIFFER) }
 
-    val SNOW_GOLEM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:snow_golem_spawn_egg"))
+    val SNOW_GOLEM_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:snow_golem_spawn_egg")) { SpawnEggItem(it, EntityType.SNOW_GOLEM) }
 
-    val SPIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:spider_spawn_egg"))
+    val SPIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:spider_spawn_egg")) { SpawnEggItem(it, EntityType.SPIDER) }
 
-    val SQUID_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:squid_spawn_egg"))
+    val SQUID_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:squid_spawn_egg")) { SpawnEggItem(it, EntityType.SQUID) }
 
-    val STRAY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:stray_spawn_egg"))
+    val STRAY_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:stray_spawn_egg")) { SpawnEggItem(it, EntityType.STRAY) }
 
-    val STRIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:strider_spawn_egg"))
+    val STRIDER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:strider_spawn_egg")) { SpawnEggItem(it, EntityType.STRIDER) }
 
-    val TADPOLE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:tadpole_spawn_egg"))
+    val TADPOLE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:tadpole_spawn_egg")) { SpawnEggItem(it, EntityType.TADPOLE) }
 
-    val TRADER_LLAMA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:trader_llama_spawn_egg"))
+    val TRADER_LLAMA_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:trader_llama_spawn_egg")) { SpawnEggItem(it, EntityType.TRADER_LLAMA) }
 
-    val TROPICAL_FISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:tropical_fish_spawn_egg"))
+    val TROPICAL_FISH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:tropical_fish_spawn_egg")) { SpawnEggItem(it, EntityType.TROPICAL_FISH) }
 
-    val TURTLE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:turtle_spawn_egg"))
+    val TURTLE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:turtle_spawn_egg")) { SpawnEggItem(it, EntityType.TURTLE) }
 
-    val VEX_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:vex_spawn_egg"))
+    val VEX_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:vex_spawn_egg")) { SpawnEggItem(it, EntityType.VEX) }
 
-    val VILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:villager_spawn_egg"))
+    val VILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:villager_spawn_egg")) { SpawnEggItem(it, EntityType.VILLAGER) }
 
-    val VINDICATOR_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:vindicator_spawn_egg"))
+    val VINDICATOR_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:vindicator_spawn_egg")) { SpawnEggItem(it, EntityType.VINDICATOR) }
 
-    val WANDERING_TRADER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wandering_trader_spawn_egg"))
+    val WANDERING_TRADER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wandering_trader_spawn_egg")) { SpawnEggItem(it, EntityType.WANDERING_TRADER) }
 
-    val WARDEN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:warden_spawn_egg"))
+    val WARDEN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:warden_spawn_egg")) { SpawnEggItem(it, EntityType.WARDEN) }
 
-    val WITCH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:witch_spawn_egg"))
+    val WITCH_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:witch_spawn_egg")) { SpawnEggItem(it, EntityType.WITCH) }
 
-    val WITHER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wither_spawn_egg"))
+    val WITHER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wither_spawn_egg")) { SpawnEggItem(it, EntityType.WITHER) }
 
-    val WITHER_SKELETON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wither_skeleton_spawn_egg"))
+    val WITHER_SKELETON_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wither_skeleton_spawn_egg")) { SpawnEggItem(it, EntityType.WITHER_SKELETON) }
 
-    val WOLF_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wolf_spawn_egg"))
+    val WOLF_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:wolf_spawn_egg")) { SpawnEggItem(it, EntityType.WOLF) }
 
-    val ZOGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zoglin_spawn_egg"))
+    val ZOGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zoglin_spawn_egg")) { SpawnEggItem(it, EntityType.ZOGLIN) }
 
-    val CREAKING_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:creaking_spawn_egg"))
+    val CREAKING_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:creaking_spawn_egg")) { SpawnEggItem(it, EntityType.CREAKING) }
 
-    val ZOMBIE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_spawn_egg"))
+    val ZOMBIE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_spawn_egg")) { SpawnEggItem(it, EntityType.ZOMBIE) }
 
-    val ZOMBIE_HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_horse_spawn_egg"))
+    val ZOMBIE_HORSE_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_horse_spawn_egg")) { SpawnEggItem(it, EntityType.ZOMBIE_HORSE) }
 
-    val ZOMBIE_VILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_villager_spawn_egg"))
+    val ZOMBIE_VILLAGER_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombie_villager_spawn_egg")) { SpawnEggItem(it, EntityType.ZOMBIE_VILLAGER) }
 
-    val ZOMBIFIED_PIGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombified_piglin_spawn_egg"))
+    val ZOMBIFIED_PIGLIN_SPAWN_EGG: ResourceKey<Item> = register(Key.key("minecraft:zombified_piglin_spawn_egg")) { SpawnEggItem(it, EntityType.ZOMBIFIED_PIGLIN) }
 
     val EXPERIENCE_BOTTLE: ResourceKey<Item> = register(Key.key("minecraft:experience_bottle"))
 
@@ -2776,15 +2777,24 @@ object Items {
     val VAULT: ResourceKey<Item> = register(Key.key("minecraft:vault"))
 
     private fun register(key: Key): ResourceKey<Item> {
-        map[key] = Item(key)
+        return register(key, null)
+    }
+
+    private inline fun register(key: Key, crossinline itemFactory: (Key) -> Item): ResourceKey<Item> {
+        return register(key, itemFactory(key))
+    }
+
+    private fun register(key: Key, item: Item?): ResourceKey<Item> {
+        map[key] = item
         return ResourceKey(Registries.ITEM, key)
     }
 
     fun populate() {
         for ((key, value) in map) {
-            val item = if (Registries.BLOCK.containsKey(key)) BlockItem(
-                key, Registries.BLOCK.getOrThrow(Registries.BLOCK.resourceKeyByKey(key)))
-            else value
+            val item = value
+                ?: if (Registries.BLOCK.containsKey(key)) BlockItem(
+                    key, Registries.BLOCK.getOrThrow(Registries.BLOCK.resourceKeyByKey(key)))
+                else Item(key)
 
             Registries.ITEM.register(key, item)
         }

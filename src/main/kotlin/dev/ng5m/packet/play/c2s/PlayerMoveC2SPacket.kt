@@ -3,7 +3,8 @@ package dev.ng5m.packet.play.c2s
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
 import dev.ng5m.serialization.annotation.BitMask
-import dev.ng5m.util.math.Vector3d
+import dev.ng5m.util.CODEC_VECTOR3D
+import org.joml.Vector3d
 
 sealed interface PlayerMoveC2SPacket : Packet {
     companion object {
@@ -13,7 +14,7 @@ sealed interface PlayerMoveC2SPacket : Packet {
     data class Pos(val xyz: Vector3d, val flags: Flags) : PlayerMoveC2SPacket {
         companion object {
             val CODEC: Codec<Pos> = Codec.of(
-                Vector3d.CODEC_3_DOUBLES, { it.xyz },
+                CODEC_VECTOR3D, { it.xyz },
                 Codec.bitField(Flags::class.java) { Flags() }, { it.flags },
                 ::Pos
             ).forType(Pos::class.java)
@@ -23,7 +24,7 @@ sealed interface PlayerMoveC2SPacket : Packet {
     data class PosRot(val xyz: Vector3d, val yaw: Float, val pitch: Float, val flags: Flags) : PlayerMoveC2SPacket {
         companion object {
             val CODEC: Codec<PosRot> = Codec.of(
-                Vector3d.CODEC_3_DOUBLES, { it.xyz },
+                CODEC_VECTOR3D, { it.xyz },
                 Codec.FLOAT, { it.yaw },
                 Codec.FLOAT, { it.pitch },
                 FLAGS_CODEC, { it.flags },

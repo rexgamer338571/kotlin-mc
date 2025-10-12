@@ -3,7 +3,8 @@ package dev.ng5m.packet.play.s2c
 import dev.ng5m.entity.Entity
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
-import dev.ng5m.util.math.Vector3d
+import dev.ng5m.util.CODEC_VECTOR3D
+import org.joml.Vector3d
 
 data class SyncEntityPositionS2CPacket(
     val eid: Int,
@@ -14,8 +15,8 @@ data class SyncEntityPositionS2CPacket(
     companion object {
         val CODEC: Codec<SyncEntityPositionS2CPacket> = Codec.of(
             Codec.VARINT, { it.eid },
-            Vector3d.CODEC_3_DOUBLES, { it.xyz },
-            Vector3d.CODEC_3_DOUBLES, { it.velocity },
+            CODEC_VECTOR3D, { it.xyz },
+            CODEC_VECTOR3D, { it.velocity },
             Codec.FLOAT, { it.yaw },
             Codec.FLOAT, { it.pitch },
             Codec.BOOLEAN, { it.onGround },

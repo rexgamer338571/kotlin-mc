@@ -15,8 +15,8 @@ import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionType
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
-import dev.ng5m.util.math.Vector3d
-import dev.ng5m.util.math.Vector3i
+import org.joml.Vector3d
+import org.joml.Vector3i
 import dev.ng5m.world.GameRules.DO_IMMEDIATE_RESPAWN
 import dev.ng5m.world.GameRules.DO_LIMITED_CRAFTING
 import dev.ng5m.world.GameRules.REDUCED_DEBUG_INFO
@@ -24,15 +24,21 @@ import net.kyori.adventure.key.Key
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.function.Consumer
+import kotlin.math.abs
 import kotlin.math.floor
 
 class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     companion object {
-        fun packChunkCoordinates(x: Int, z: Int, precision: Int = 32): Long =
-            (x.toLong() shl precision) or (z.toLong() and ((1L shl precision) - 1L))
+        fun packChunkCoordinates(x: Int, z: Int, precision: Int = 31): Long =
+            ((x.toLong() and ((1L shl precision) - 1L)) shl precision) or (z.toLong() and ((1L shl precision) - 1L))
 
-        fun unpackChunkCoordinates(packed: Long, precision: Int = 32): Pair<Int, Int> =
-            (packed shr precision).toInt() to (packed and ((1L shl precision) - 1L)).toInt()
+        fun unpackChunkCoordinates(packed: Long, precision: Int = 31): Pair<Int, Int> {
+            val mask = (1L shl precision) - 1L
+            val x = (packed shr precision).toInt()
+            val z = (packed and mask).toInt()
+
+            return (if (x and (1 shl (precision - 1)) != 0) x or ((-1) shl precision) else x) to (if (z and (1 shl (precision - 1)) != 0) z or ((-1) shl precision) else z)
+        }
     }
 
     private val type: DimensionType = Registries.DIMENSION_TYPE.getOrThrow(typeKey)
@@ -160,12 +166,11 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     }
 
 
-
     fun getBlockAt(x: Int, y: Int, z: Int): Block {
         val cx = floor(x / 16.0).toInt()
         val cz = floor(z / 16.0).toInt()
         val chunk = chunks[packChunkCoordinates(cx, cz)] ?: return Blocks.AIR
-        val state = chunk.getBlockStateAt(x % 16, y, z % 16)
+        val state = chunk.getBlockStateAt(abs(x % 16), y, abs(z % 16))
 
         return state.block
     }
@@ -179,7 +184,7 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
 
     fun setBlockStateAt(pos: Vector3i, state: BlockState) = setBlockStateAt(pos.x, pos.y, pos.x, state)
 
-    fun getBlockAt(pos: Vector3i): Block? = getBlockAt(pos.x, pos.y, pos.z)
+    fun getBlockAt(pos: Vector3i): Block = getBlockAt(pos.x, pos.y, pos.z)
 
     fun getBlockEntityAt(x: Int, y: Int, z: Int): BlockEntity? {
         val cx = floor(x / 16.0).toInt()

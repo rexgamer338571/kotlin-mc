@@ -14,6 +14,8 @@ import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
 import dev.ng5m.packet.play.s2c.*
 import dev.ng5m.util.IntTracker
 import dev.ng5m.util.PacketSendContext
+import dev.ng5m.util.copy
+import dev.ng5m.util.transform
 import dev.ng5m.world.ChunkSection
 import dev.ng5m.world.Location
 import dev.ng5m.world.World
@@ -202,10 +204,10 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
     }
 
     fun move() {
-        val delta = location.xyz.clone() - previousLocation.xyz
+        val delta = location.xyz.copy().sub(previousLocation.xyz)
 
         val specialDelta =
-            (location.xyz.clone().transform(this::packDelta) - (previousLocation.xyz.clone().transform(this::packDelta))).toShorts()
+            (location.xyz.transform(this::packDelta).sub((previousLocation.xyz.transform(this::packDelta))))
 
         val rotYaw = (location.yaw - previousLocation.yaw) != 0.0F
         val rotPitch = (location.pitch - previousLocation.pitch) != 0.0F

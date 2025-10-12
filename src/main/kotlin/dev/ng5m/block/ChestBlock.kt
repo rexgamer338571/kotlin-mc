@@ -14,16 +14,14 @@ import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.nbt.impl.CompoundTag
 import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization.nbt.impl.StringTag
-import dev.ng5m.util.math.Vector3f
-import dev.ng5m.util.math.Vector3i
-import dev.ng5m.util.toNBT
+import org.joml.Vector3f
 import net.kyori.adventure.text.Component
 
 object ChestBlock : Block() {
     private val name: Component = Component.text("Chest")
 
     override fun createBlockEntity(x: Int, y: Int, z: Int, state: BlockState): BlockEntity {
-        return BlockEntity(x, y, z, BlockEntityType.CHEST, CompoundTag())
+        return ChestBlockEntity(x, y, z, CompoundTag())
     }
 
     override fun onInteract(player: Player, hand: Hand.Relative, face: Face, cursorPos: Vector3f,
