@@ -80,6 +80,10 @@ interface Properties {
             return true
         }
 
+        override fun hashCode(): Int {
+            return map.hashCode()
+        }
+
     }
 
 }

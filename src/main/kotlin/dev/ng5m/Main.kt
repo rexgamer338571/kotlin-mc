@@ -3,12 +3,15 @@ package dev.ng5m
 import de.articdive.jnoise.core.api.functions.Interpolation
 import de.articdive.jnoise.generators.noise_parameters.fade_functions.FadeFunction
 import de.articdive.jnoise.pipeline.JNoise
+import dev.ng5m.api.ChunkAccess
+import dev.ng5m.api.KMc
 import dev.ng5m.block.Blocks
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.event.impl.player.PlayerJoinEvent
+import dev.ng5m.event.impl.player.PlayerMoveEvent
 import dev.ng5m.event.impl.player.PlayerPreJoinEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.item.Items
@@ -19,6 +22,8 @@ import dev.ng5m.registry.Registries
 import dev.ng5m.serialization_kt.Either
 import dev.ng5m.util.TypeArguments
 import dev.ng5m.world.*
+import dev.ng5m.world.particle.ParticleOptions
+import dev.ng5m.world.particle.ParticleTypes
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
@@ -204,6 +209,17 @@ fun main() {
         it.player.inventory.hotbar(0, ItemStack(Items.STONE).withCount(64))
         it.player.inventory.hotbar(1, ItemStack(Items.WATER_BUCKET))
 //        it.player.inventory.chest(ItemStack.AIR)
+    }
+
+    EventManager.register(PlayerMoveEvent::class.java) {
+        val loc = it.from
+        it.player.sendParticle(
+            x = loc.x(),
+            y = loc.y(),
+            z = loc.z(),
+            type = ParticleTypes.DUST,
+            options = ParticleOptions.Dust(0xFF00FF, 2.0f)
+        )
     }
 
     EventManager.register(PlayerJoinEvent::class.java) {

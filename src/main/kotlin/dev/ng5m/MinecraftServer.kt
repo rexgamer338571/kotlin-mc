@@ -27,6 +27,7 @@ import dev.ng5m.util.*
 import dev.ng5m.util.json.EitherTypeAdapterFactory
 import dev.ng5m.world.Difficulty
 import dev.ng5m.world.World
+import dev.ng5m.world.particle.ParticleTypes
 import io.netty.buffer.Unpooled
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
@@ -186,6 +187,7 @@ class MinecraftServer {
         Items.populate()
 
         initClass(ItemComponentTypes::class)
+        initClass(ParticleTypes::class)
     }
 
     fun createWorld(type: ResourceKey<DimensionType>, key: Key): World {

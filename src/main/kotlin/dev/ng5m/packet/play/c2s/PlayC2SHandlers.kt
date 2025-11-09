@@ -146,6 +146,19 @@ object PlayC2SHandlers {
         connection.player.openInventory = null
     }
 
+    fun interact(connection: MinecraftConnection, packet: InteractC2SPacket) {
+        val entity = MinecraftServer.getInstance().getEntity(packet.entityId) ?: return
+
+        connection.player.sneaking = packet.sneaking
+
+        entity.onInteracted(connection.player, packet)
+        when (packet.type) {
+            InteractC2SPacket.Type.ATTACK -> entity.onAttacked(connection.player, packet.sneaking)
+            InteractC2SPacket.Type.INTERACT -> entity.onInteracted(connection.player, packet.hand!!, packet.sneaking)
+            InteractC2SPacket.Type.INTERACT_AT -> entity.onInteractedAt(connection.player, packet.hand!!, packet.relativePos!!, packet.sneaking)
+        }
+    }
+
     fun movePos(connection: MinecraftConnection, packet: PlayerMoveC2SPacket.Pos) {
         if (!validateMove(connection)) return
 
@@ -270,7 +283,11 @@ object PlayC2SHandlers {
     }
 
     private fun fireMove(player: Player) {
-        EventManager.fire(PlayerMoveEvent(player, player.previousLocation, player.location))
+        val ev = PlayerMoveEvent(player, player.previousLocation, player.location)
+        EventManager.fire(ev)
+
+        if (!ev.cancelled)
+            player.move()
     }
 
     private fun validateMove(connection: MinecraftConnection): Boolean = !connection.syncingPosition

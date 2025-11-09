@@ -7,6 +7,7 @@ import dev.ng5m.serialization.Codec
 import dev.ng5m.util.bitsToRepresent
 import net.kyori.adventure.key.Key
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.max
 
 class ChunkSection {
@@ -94,20 +95,15 @@ class ChunkSection {
     internal var blocks = PalettedContainer(16 * 16 * 16, 4, 8, 15)
     internal var biomes = PalettedContainer(4 * 4 * 4, 1, 3, 6)
 
-    private var blockCountCache: Int? = null
-    private var blocksUniqueCache: Int? = null
-    private var blocksDirty = true
-
     fun setBlock(x: Int, y: Int, z: Int, value: Int) {
         val index = getBlockIndex(x, y, z)
-//        if (blocks.get(index) != value) {
+        if (blocks.get(index) != value) {
             blocks.set(index, value)
-//            blocksDirty = true
-//        }
+        }
     }
 
     fun getBlock(x: Int, y: Int, z: Int): Int {
-        return blocks[getBlockIndex(x, y, z)]
+        return blocks[getBlockIndex(abs(x), y, abs(z))]
     }
 
     fun setBiome(x: Int, y: Int, z: Int, value: Int) {
@@ -116,69 +112,5 @@ class ChunkSection {
 
     private fun calculateBlockCount(): Int {
         return 4096
-
-        if (!blocksDirty && blockCountCache != null) {
-            return blockCountCache!!
-        }
-
-        var count = 0
-        for (i in 0 until blocks.size) {
-            if (!nonNonAirBlocksRaw.contains(blocks[i])) {
-                count++
-            }
-        }
-
-        blockCountCache = count
-        return count
-    }
-
-    private fun bitsPerEntry(isBlocks: Boolean): Int {
-        if (!isBlocks) {
-            val uniqueCount = biomes.uniqueSize()
-            if (uniqueCount == 1) return 0
-
-            val bpe = max(1, bitsToRepresent(uniqueCount - 1))
-            return when {
-                bpe == DIRECT_BIOMES -> DIRECT_BIOMES
-                bpe in INDIRECT_MIN_BIOMES..INDIRECT_MAX_BIOMES -> bpe
-                bpe > INDIRECT_MAX_BIOMES -> DIRECT_BIOMES
-                else -> INDIRECT_MIN_BIOMES
-            }
-        }
-
-        if (!blocksDirty && blocksUniqueCache != null) {
-            return calculateBpeFromUniqueCount(blocksUniqueCache!!, true)
-        }
-
-        val uniqueCount = blocks.uniqueSize()
-        blocksUniqueCache = uniqueCount
-
-        return calculateBpeFromUniqueCount(uniqueCount, true)
-    }
-
-    private fun unique(array: IntArray): Int {
-        return Arrays.stream(array).distinct().count().toInt()
-    }
-
-    private fun calculateBpeFromUniqueCount(uniqueCount: Int, isBlocks: Boolean): Int {
-        if (uniqueCount == 1) return 0
-
-        val bpe = max(1, 32 - Integer.numberOfLeadingZeros(uniqueCount - 1))
-        val (direct, indirectMin, indirectMax) = if (isBlocks) {
-            Triple(DIRECT_BLOCKS, INDIRECT_MIN_BLOCKS, INDIRECT_MAX_BIOMES)
-        } else {
-            Triple(DIRECT_BIOMES, INDIRECT_MIN_BIOMES, INDIRECT_MAX_BIOMES)
-        }
-
-        return when {
-            bpe == direct -> direct
-            bpe in indirectMin..indirectMax -> bpe
-            bpe > indirectMax -> direct
-            else -> indirectMin
-        }
-    }
-
-    fun markDirty() {
-        blocksDirty = true
     }
 }

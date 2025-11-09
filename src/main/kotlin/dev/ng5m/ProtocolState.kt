@@ -1,5 +1,7 @@
 package dev.ng5m
 
+import dev.ng5m.packet.PacketHandler
+import dev.ng5m.packet.PacketHandlerContext
 import dev.ng5m.packet.common.CommonHandlers
 import dev.ng5m.packet.common.PluginMessagePacket
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
@@ -23,13 +25,18 @@ import dev.ng5m.packet.status.c2s.StatusC2SHandlers
 import dev.ng5m.packet.status.c2s.StatusRequestC2SPacket
 import dev.ng5m.packet.status.s2c.PongResponseS2CPacket
 import dev.ng5m.packet.status.s2c.StatusResponseS2CPacket
-import dev.ng5m.serialization.DoubleMap
 import dev.ng5m.serialization.Packet
 import dev.ng5m.util.NetworkFlow
+import dev.ng5m.util.TriConsumer
 import dev.ng5m.util.initClass
+import it.unimi.dsi.fastutil.objects.Object2IntMap
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap
+import it.unimi.dsi.fastutil.objects.ObjectArrayList
+import it.unimi.dsi.fastutil.objects.ObjectList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.function.BiConsumer
+import kotlin.math.max
 import kotlin.reflect.KClass
 
 class ProtocolState {
@@ -101,6 +108,7 @@ class ProtocolState {
             register(0x10, ContainerClickC2SPacket::class).handler(PlayC2SHandlers::containerClick)
             register(0x11, ContainerCloseC2SPacket::class).handler(PlayC2SHandlers::containerClose)
             register(0x14, PluginMessagePacket::class).immediateHandling().handler(CommonHandlers::pluginMessage)
+            register(0x18, InteractC2SPacket::class).handler(PlayC2SHandlers::interact)
             register(0x1C, PlayerMoveC2SPacket.Pos::class).excludeFromLogging().handler(PlayC2SHandlers::movePos)
             register(0x1D, PlayerMoveC2SPacket.PosRot::class).excludeFromLogging().handler(PlayC2SHandlers::movePosRot)
             register(0x1E, PlayerMoveC2SPacket.Rot::class).excludeFromLogging().handler(PlayC2SHandlers::moveRot)
@@ -128,6 +136,7 @@ class ProtocolState {
             register(0x22, UnloadChunkS2CPacket::class).excludeFromLogging()
             register(0x23, GameEventS2CPacket::class)
             register(0x28, ChunkS2CPacket::class).excludeFromLogging()
+            register(0x2A, LevelParticlesS2CPacket::class)
             register(0x2C, JoinS2CPacket::class)
             register(0x2F, MoveEntityPacket.Pos::class).excludeFromLogging()
             register(0x30, MoveEntityPacket.PosRot::class).excludeFromLogging()
@@ -150,12 +159,13 @@ class ProtocolState {
     }
 
     private val requiresImmediateHandling: MutableSet<Class<out Packet>> = mutableSetOf()
-    private val packetIdToTypeDoubleMap: Map<NetworkFlow, DoubleMap<MutableMap<Any, Any>, Int, Class<out Packet>>> =
-        mapOf(
-            Pair(NetworkFlow.CLIENTBOUND, DoubleMap(::HashMap)),
-            Pair(NetworkFlow.SERVERBOUND, DoubleMap(::HashMap))
-        )
-    private val handlers: MutableMap<Class<out Packet>, BiConsumer<MinecraftConnection, out Packet>> = mutableMapOf()
+
+    private val id2TypeClientbound: ObjectList<Class<out Packet>> = ObjectArrayList()
+    private val type2IdClientbound: Object2IntMap<Class<out Packet>> = Object2IntOpenHashMap()
+    private val id2TypeServerbound: ObjectList<Class<out Packet>> = ObjectArrayList()
+    private val type2IdServerbound: Object2IntMap<Class<out Packet>> = Object2IntOpenHashMap()
+
+    private val handlers: MutableMap<Class<out Packet>, PacketHandler<out Packet>> = mutableMapOf()
     private var lastRegisteredClass: Class<out Packet>? = null
     private var strictErrorHandling: Boolean = false
     private var flow: NetworkFlow = NetworkFlow.SERVERBOUND
@@ -170,7 +180,10 @@ class ProtocolState {
     fun <T : Packet> register(id: Int, clazz: Class<T>): ProtocolState {
         initClass(clazz)
 
-        packetIdToTypeDoubleMap[flow]!!.put(id, clazz)
+        val id2Type = (if (flow == NetworkFlow.CLIENTBOUND) id2TypeClientbound else id2TypeServerbound)
+        id2Type.size(max(id + 1, id2Type.size))
+        id2Type[id] = clazz
+        (if (flow == NetworkFlow.CLIENTBOUND) type2IdClientbound else type2IdServerbound)[clazz] = id
         lastRegisteredClass = clazz
 
         return this
@@ -206,12 +219,24 @@ class ProtocolState {
         return requiresImmediateHandling.contains(clazz)
     }
 
-    fun <T : Packet> handler(handler: BiConsumer<MinecraftConnection, T>): ProtocolState {
+    fun <T : Packet> handler0(handler: PacketHandler<T>): ProtocolState {
         ensureRegisteredClassExists()
         handlers[lastRegisteredClass!!] = handler
 
         return this
     }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Packet> handler(handler: BiConsumer<MinecraftConnection, T>): ProtocolState =
+        this.handler0(PacketHandler { c, p -> handler.accept(c, p as T) })
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Packet> handler(handler: TriConsumer<MinecraftConnection, T, PacketHandlerContext>): ProtocolState =
+        this.handler0(PacketHandler { c, p ->
+            val ctx = PacketHandlerContext(c, p)
+            handler.accept(c, p as T, ctx)
+            ctx.afterHandled()
+        })
 
     fun strictErrorHandling(value: Boolean): ProtocolState {
         this.strictErrorHandling = value
@@ -233,7 +258,7 @@ class ProtocolState {
     }
 
     fun typeForId(flow: NetworkFlow, id: Int): Class<out Packet>? {
-        val type = packetIdToTypeDoubleMap[flow]!!.getA(id)
+        val type = (if (flow == NetworkFlow.CLIENTBOUND) id2TypeClientbound else id2TypeServerbound).getOrNull(id)
 
         type ?: run {
             val message = String.format("Packet ID 0x%02x not registered in state $this", id)
@@ -248,24 +273,23 @@ class ProtocolState {
     }
 
     fun <T : Packet> idForType(flow: NetworkFlow, clazz: Class<T>): Int {
-        val v = packetIdToTypeDoubleMap[flow]!!.getB(clazz)
-        if (v == null) {
+        val v = (if (flow == NetworkFlow.CLIENTBOUND) type2IdClientbound else type2IdServerbound).getOrDefault(clazz, -1)
+        if (v == -1) {
             LOGGER.error("Type ${clazz.simpleName} not registered in flow $flow")
-            return -1
         }
 
         return v
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Packet> handlerFor(clazz: Class<T>): BiConsumer<MinecraftConnection, Packet>? {
-        return (handlers[clazz] ?: return null) as BiConsumer<MinecraftConnection, Packet>
+    fun <T : Packet> handlerFor(clazz: Class<T>): PacketHandler<Packet>? {
+        return (handlers[clazz] ?: return null) as PacketHandler<Packet>
     }
 
 
 
     override fun toString(): String {
-        return "ProtocolState($packetIdToTypeDoubleMap)"
+        return "ProtocolState(C2S=$id2TypeServerbound, S2C=$id2TypeClientbound)"
     }
 
 }

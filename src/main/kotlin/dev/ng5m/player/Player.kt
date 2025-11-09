@@ -12,6 +12,7 @@ import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
 import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
 import dev.ng5m.packet.play.s2c.*
+import dev.ng5m.registry.ResourceKey
 import dev.ng5m.util.IntTracker
 import dev.ng5m.util.PacketSendContext
 import dev.ng5m.util.copy
@@ -19,6 +20,8 @@ import dev.ng5m.util.transform
 import dev.ng5m.world.ChunkSection
 import dev.ng5m.world.Location
 import dev.ng5m.world.World
+import dev.ng5m.world.particle.ParticleOptions
+import dev.ng5m.world.particle.ParticleType
 import net.kyori.adventure.text.Component
 import java.util.Optional
 import kotlin.math.min
@@ -106,9 +109,7 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
     }
 
     fun disconnect(reason: Component) {
-        connection.sendPacket(DisconnectS2CPacket(reason)).onFinish {
-            connection.removePlayer()
-        }
+        connection.disconnect(reason)
     }
 
     fun disconnectWithException(x: Exception) {
@@ -136,6 +137,28 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
         return if (hand == Hand.Relative.MAIN_HAND)
             inventory.hotbar(heldItem)
         else inventory.offhand()
+    }
+
+    fun <O : ParticleOptions> sendParticle(
+        longDistance: Boolean = false,
+        alwaysVisible: Boolean = false,
+        x: Double,
+        y: Double,
+        z: Double,
+        offsetX: Float = 0f,
+        offsetY: Float = 0f,
+        offsetZ: Float = 0f,
+        maxSpeed: Float = 0f,
+        count: Int = 1,
+        type: ResourceKey<ParticleType<O>>,
+        options: O
+    ) {
+        @Suppress("UNCHECKED_CAST")
+        connection.sendPacket(LevelParticlesS2CPacket(
+            longDistance, alwaysVisible, x, y, z,
+            offsetX, offsetY, offsetZ, maxSpeed,
+            count, type as ResourceKey<ParticleType<*>>, options
+        ))
     }
 
     fun generateAndSendChunksAround() {

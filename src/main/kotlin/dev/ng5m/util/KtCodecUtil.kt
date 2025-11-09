@@ -5,6 +5,7 @@ import org.joml.Vector3d
 import org.joml.Vector3f
 import org.joml.Vector3i
 import java.util.Optional
+import kotlin.jvm.optionals.getOrNull
 import kotlin.reflect.KClass
 
 val CODEC_VECTOR3DS: Codec<Vector3d> = Codec.of(
@@ -45,7 +46,7 @@ fun Vector3f.toInts(): Vector3i = Vector3i(x.toInt(), y.toInt(), z.toInt())
 fun Vector3i.toDoubles(): Vector3d = Vector3d(x.toDouble(), y.toDouble(), z.toDouble())
 
 fun <T : Any> Codec<T>.nullable(): Codec<T?> = this.prefixedOptional().xmap<T>(
-    { it.get() }, { Optional.ofNullable(it) }
+    { it.getOrNull() }, { Optional.ofNullable(it) }
 )
 
 inline fun <reified E : Enum<E>> ofEnum(): Codec<E> = Codec.ofEnum(E::class.java)

@@ -7,6 +7,8 @@ import dev.ng5m.entity.EntityType
 import dev.ng5m.entity.inventory.InventoryType
 import dev.ng5m.item.Item
 import dev.ng5m.item.component.ItemComponentType
+import dev.ng5m.world.particle.ParticleOptions
+import dev.ng5m.world.particle.ParticleType
 import net.kyori.adventure.key.Key
 
 object Registries {
@@ -36,6 +38,8 @@ object Registries {
     val ITEM_COMPONENT_TYPE: Registry<ItemComponentType<*>> = Registry.createInternal(Key.key("data_component_type"))
     val ENCHANTMENT: Registry<EnchantmentType> = Registry.createInternal(Key.key("enchantment"))
     val MENU: Registry<InventoryType> = Registry.createInternal(Key.key("menu"))
+    val PARTICLE_TYPE: Registry<ParticleType<*>> = Registry.createInternal(Key.key("particle_type"))
+
     fun init() {
         // empty because it's here to init the class
     }

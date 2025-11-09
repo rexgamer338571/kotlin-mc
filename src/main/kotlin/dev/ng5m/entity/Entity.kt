@@ -1,15 +1,19 @@
 package dev.ng5m.entity
 
 import dev.ng5m.Ticking
+import dev.ng5m.packet.play.c2s.InteractC2SPacket
 import dev.ng5m.packet.play.s2c.SpawnEntityS2CPacket
+import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
 import dev.ng5m.util.AABB
 import dev.ng5m.util.IntTracker
+import org.joml.Vector3f
 import org.joml.Vector3d
 import dev.ng5m.world.Location
 import dev.ng5m.world.World
+import net.kyori.adventure.text.Component
 import java.util.UUID
 import kotlin.properties.Delegates
 
@@ -66,6 +70,22 @@ open class Entity(private val type: EntityType) : Ticking {
     }
 
     open fun getEntityData(): Int = 0
+
+    open fun onInteracted(player: Player, packet: InteractC2SPacket) {
+        player.sendSystemMessage(Component.text("i was interacted: $packet"))
+    }
+
+    open fun onAttacked(player: Player, playerSneaking: Boolean) {
+    }
+
+    open fun onInteracted(player: Player, hand: Hand.Relative, playerSneaking: Boolean) {
+    }
+
+    open fun onInteractedAt(player: Player, hand: Hand.Relative, relativePos: Vector3f, playerSneaking: Boolean) {
+    }
+
+
+
 
     override fun tick() {
         age++

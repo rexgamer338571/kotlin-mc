@@ -47,6 +47,8 @@ open class Registry<T : Any>(
             return ROOT.values.toMutableList()
         }
 
+        fun getRegistry(key: Key): Registry<*> = ROOT[key]!!
+
         inline fun <reified T : Any> create(key: Key): Registry<T> {
             return Registry(key, T::class.java)
         }

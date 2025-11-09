@@ -85,7 +85,7 @@ class Chunk(
     }
 
     fun getBlockStateAt(x: Int, y: Int, z: Int): BlockState {
-        return BlockState.stateManager.byId(getBlockIdAt(x, y, z))
+        return BlockState.stateManager.byId(getBlockIdAt(x % 16, y, z % 16))
     }
 
     fun setBlockStateAt(x: Int, y: Int, z: Int, state: BlockState) {

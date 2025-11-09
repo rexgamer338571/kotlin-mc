@@ -1,5 +1,6 @@
 package dev.ng5m.item
 
+import dev.ng5m.MinecraftServer
 import dev.ng5m.block.Block
 import dev.ng5m.block.Face
 import dev.ng5m.packet.play.s2c.BlockUpdateS2CPacket
@@ -24,7 +25,12 @@ open class BlockItem(key: Key, val block: Block) : Item(key) {
 
         val state = block.defaultBlockState()
         player.getWorld().setBlockStateAt(newPos, state)
-        player.connection.sendPacket(BlockUpdateS2CPacket(newPos, state))
+        val be = block.createBlockEntity(newPos.x, newPos.y, newPos.z, state)
+        if (be != null) player.getWorld().addBlockEntityAt(newPos.x, newPos.y, newPos.z, be)
+
+        MinecraftServer.getInstance().getPlayingConnections().forEach {
+            it.sendPacket(BlockUpdateS2CPacket(newPos, state))
+        }
     }
 
 }

@@ -3,6 +3,8 @@ package dev.ng5m
 import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.mcio.PacketCompression
+import dev.ng5m.packet.PacketHandler
+import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.configuration.s2c.FinishConfigurationS2CPacket
 import dev.ng5m.packet.configuration.s2c.RegistryDataS2CPacket
@@ -14,11 +16,11 @@ import dev.ng5m.player.Player
 import dev.ng5m.registry.Registry
 import dev.ng5m.serialization.Packet
 import dev.ng5m.util.PacketSendContext
+import net.kyori.adventure.text.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
-import java.util.function.BiConsumer
 
 abstract class MinecraftConnection : Ticking {
     companion object {
@@ -33,6 +35,8 @@ abstract class MinecraftConnection : Ticking {
     var protocolState: ProtocolState = ProtocolState.HANDSHAKE;
 
     var compression: PacketCompression? = null
+
+    var disconnectMessage: Component? = null
 
     fun sendPacket(packet: Packet): PacketSendContext {
         val ctx = PacketSendContext(packet)
@@ -54,6 +58,12 @@ abstract class MinecraftConnection : Ticking {
     fun enableCompression(threshold: Int) {
         sendPacket(SetCompressionS2CPacket(threshold)).onFinish {
             compression = PacketCompression(threshold)
+        }
+    }
+
+    fun disconnect(reason: Component) {
+        sendPacket(DisconnectS2CPacket(reason)).onFinish {
+            removePlayer()
         }
     }
 
@@ -105,9 +115,9 @@ abstract class MinecraftConnection : Ticking {
     }
 
     internal fun internalReceive(packet: Packet) {
-        val handler: BiConsumer<MinecraftConnection, Packet> =
+        val handler: PacketHandler<Packet> =
             protocolState.handlerFor(packet::class.java) ?: return
-        handler.accept(this, packet)
+        handler.handle(this, packet)
     }
 
     internal fun removePlayer() {

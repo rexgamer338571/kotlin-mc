@@ -193,6 +193,13 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
         return (chunks[packChunkCoordinates(cx, cz)]?.getBlockEntity(x % 16, y, z % 16))
     }
 
+    fun addBlockEntityAt(x: Int, y: Int, z: Int, blockEntity: BlockEntity) {
+        val cx = floor(x / 16.0).toInt()
+        val cz = floor(z / 16.0).toInt()
+
+        chunks[packChunkCoordinates(cx, cz)]?.addBlockEntity(blockEntity)
+    }
+
     fun dropItem(pos: Vector3d, stack: ItemStack) {
         val item = ItemEntity(stack)
         item.location = Location(this, pos)

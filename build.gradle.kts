@@ -33,6 +33,9 @@ dependencies {
 
     implementation(group = "it.unimi.dsi", name = "fastutil", version = "8.2.2")
 
+    implementation("org.graalvm.polyglot:polyglot:25.0.1")
+    implementation("org.graalvm.polyglot:js:25.0.1")
+
 }
 
 sourceSets {
