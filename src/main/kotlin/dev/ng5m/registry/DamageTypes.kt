@@ -1,7 +1,5 @@
 package dev.ng5m.registry
 
-import net.kyori.adventure.key.Key
-
 object DamageTypes : RegistryInitializer<DamageType>(Registries.DAMAGE_TYPE) {
     val FREEZE = add("freeze")
 

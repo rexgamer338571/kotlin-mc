@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.1.0"
+    id("application")
 
     java
 }
@@ -55,4 +56,8 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(21)
+}
+
+application {
+    mainClass = "dev.ng5m.MainKt"
 }
