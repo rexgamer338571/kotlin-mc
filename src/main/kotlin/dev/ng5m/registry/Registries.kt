@@ -5,6 +5,8 @@ import dev.ng5m.block.Block
 import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.entity.EntityType
 import dev.ng5m.entity.inventory.InventoryType
+import dev.ng5m.entity.villager.VillagerProfession
+import dev.ng5m.entity.villager.VillagerType
 import dev.ng5m.item.Item
 import dev.ng5m.item.component.ItemComponentType
 import dev.ng5m.world.particle.ParticleOptions
@@ -39,6 +41,9 @@ object Registries {
     val ENCHANTMENT: Registry<EnchantmentType> = Registry.createInternal(Key.key("enchantment"))
     val MENU: Registry<InventoryType> = Registry.createInternal(Key.key("menu"))
     val PARTICLE_TYPE: Registry<ParticleType<*>> = Registry.createInternal(Key.key("particle_type"))
+    val VILLAGER_TYPE: Registry<VillagerType> = Registry.createEnumRegistry(Key.key("villager_type"))
+    val VILLAGER_PROFESSION: Registry<VillagerProfession> = Registry.createEnumRegistry(Key.key("villager_profession"))
+    val CAT_VARIANT: Registry<CatVariant> = Registry.createInternal(Key.key("cat_variant"))
 
     fun init() {
         // empty because it's here to init the class

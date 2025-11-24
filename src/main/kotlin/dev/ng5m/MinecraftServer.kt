@@ -14,11 +14,13 @@ import dev.ng5m.event.LifecycleEvents
 import dev.ng5m.event.impl.lifecycle.ServerShutdownEvent
 import dev.ng5m.item.Items
 import dev.ng5m.item.component.ItemComponentTypes
+import dev.ng5m.pack.ResourcePackManager
 import dev.ng5m.packet.common.PluginMessagePacket
 import dev.ng5m.player.Player
 import dev.ng5m.registry.*
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.NBTCodec
+import dev.ng5m.serialization.Packet
 import dev.ng5m.serialization.nbt.NBT
 import dev.ng5m.serialization_kt.Transcoder
 import dev.ng5m.server.NettyServer
@@ -28,6 +30,7 @@ import dev.ng5m.util.json.EitherTypeAdapterFactory
 import dev.ng5m.world.Difficulty
 import dev.ng5m.world.World
 import dev.ng5m.world.particle.ParticleTypes
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
@@ -36,8 +39,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.function.Predicate
 import kotlin.concurrent.thread
 import kotlin.math.max
+
+val LOGGER = KotlinLogging.logger {  }
 
 class MinecraftServer {
 
@@ -262,6 +268,14 @@ class MinecraftServer {
 
     fun removeConnection(connection: MinecraftConnection) {
         server.removeConnection(connection)
+    }
+
+    fun broadcastPlayPacket(packet: Packet, predicate: Predicate<MinecraftConnection> = Predicate { _ -> true }) {
+        getPlayingConnections()
+            .filter { predicate.test(it) }
+            .forEach {
+                it.sendPacket(packet)
+            }
     }
 
     @Suppress("UNCHECKED_CAST")

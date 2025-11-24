@@ -2,11 +2,13 @@ package dev.ng5m.entity
 
 import dev.ng5m.Ticking
 import dev.ng5m.packet.play.c2s.InteractC2SPacket
+import dev.ng5m.packet.play.s2c.SetEntityDataS2CPacket
 import dev.ng5m.packet.play.s2c.SpawnEntityS2CPacket
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.ResourceKey
+import dev.ng5m.serialization.util.BitField
 import dev.ng5m.util.AABB
 import dev.ng5m.util.IntTracker
 import org.joml.Vector3f
@@ -21,6 +23,15 @@ open class Entity(private val type: EntityType) : Ticking {
     companion object {
         @JvmStatic
         protected val ID_TRACKER: IntTracker = IntTracker()
+
+        val METADATA_B0 = EntityMetadata.Index(0, EntityMetadata.Type.BYTE, 0.toByte())
+        val METADATA_AIR_TICKS = EntityMetadata.Index(1, EntityMetadata.Type.VARINT, 300)
+        val METADATA_CUSTOM_NAME = EntityMetadata.Index(2, EntityMetadata.Type.OPTIONAL_TEXT_COMPONENT, null)
+        val METADATA_CUSTOM_NAME_VISIBLE = EntityMetadata.Index(3, EntityMetadata.Type.BOOLEAN, false)
+        val METADATA_SILENT = EntityMetadata.Index(4, EntityMetadata.Type.BOOLEAN, false)
+        val METADATA_NO_GRAVITY = EntityMetadata.Index(5, EntityMetadata.Type.BOOLEAN, false)
+        val METADATA_POSE = EntityMetadata.Index(6, EntityMetadata.Type.POSE, Pose.STANDING)
+        val METADATA_FROZEN_TICKS = EntityMetadata.Index(7, EntityMetadata.Type.VARINT, 0)
     }
 
     protected constructor(typeKey: ResourceKey<EntityType>, id: Int) : this(typeKey) {
@@ -30,7 +41,7 @@ open class Entity(private val type: EntityType) : Ticking {
     constructor(typeKey: ResourceKey<EntityType>) : this(Registries.ENTITY_TYPE.getOrThrow(typeKey))
 
     private var id = ID_TRACKER.next()
-    val uuid: UUID = UUID.randomUUID()
+    var uuid: UUID = UUID.randomUUID()
     private lateinit var world: World
 
     val portalCooldown = 0
@@ -43,14 +54,22 @@ open class Entity(private val type: EntityType) : Ticking {
     var health: Double = type.defaultHealth
 
     var onGround: Boolean = true
+
     var pushingAgainstWall: Boolean = false
 
+    val metadata = EntityMetadata()
+
+    var customName by MetadataProperty.of(metadata, METADATA_CUSTOM_NAME)
+
+    var hideNameTag by MetadataProperty.bitMask(metadata, METADATA_B0, 0x02)
+    var sprinting by MetadataProperty.bitMask(metadata, METADATA_B0, 0x08)
+    var invisible by MetadataProperty.bitMask(metadata, METADATA_B0, 0x20)
 
     fun getBoundingBox(): AABB {
         return type.boundingBox
     }
 
-    internal fun setWorld(world: World) {
+    fun setWorld(world: World) {
         this.world = world
     }
 
@@ -67,6 +86,7 @@ open class Entity(private val type: EntityType) : Ticking {
 
     open fun spawnForPlayer(player: Player) {
         player.connection.sendPacket(SpawnEntityS2CPacket(this))
+        syncMetadata(player)
     }
 
     open fun getEntityData(): Int = 0
@@ -84,8 +104,9 @@ open class Entity(private val type: EntityType) : Ticking {
     open fun onInteractedAt(player: Player, hand: Hand.Relative, relativePos: Vector3f, playerSneaking: Boolean) {
     }
 
-
-
+    fun syncMetadata(player: Player) {
+        player.connection.sendPacket(SetEntityDataS2CPacket(this))
+    }
 
     override fun tick() {
         age++

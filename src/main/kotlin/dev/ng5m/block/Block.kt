@@ -6,6 +6,7 @@ import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries
 import org.joml.Vector3f
 import dev.ng5m.world.ChunkSection
+import net.kyori.adventure.key.Key
 
 open class Block() {
     private val allowedStateProperties: MutableSet<BlockStateProperty<*>> = mutableSetOf()
@@ -23,6 +24,10 @@ open class Block() {
 
     fun isEmpty(): Boolean {
         return ChunkSection.nonNonAirBlocks.contains(Registries.BLOCK.resourceKeyByValue(this))
+    }
+
+    fun getKey(): Key {
+        return Registries.BLOCK.keyByValue(this)
     }
 
 }

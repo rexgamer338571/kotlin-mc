@@ -7,4 +7,5 @@ import dev.ng5m.world.Location
 
 data class PlayerMoveEvent(val player: Player, val from: Location, val to: Location) : Event, Cancellable {
     var cancelled = false
+    override fun cancelled(): Boolean = cancelled
 }

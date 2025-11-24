@@ -60,9 +60,25 @@ open class Registry<T : Any>(
         inline fun <reified T: Any> createInternalDefaulted(key: Key, default: Int): DefaultedRegistry<T> {
             return DefaultedRegistry(key, T::class.java, false, default)
         }
+
+        inline fun <reified E : Enum<E>> createEnumRegistry(
+            key: Key, internal: Boolean = true,
+            crossinline keyFactory: (E) -> Key = { Key.key(it.name.lowercase()) }
+            ): Registry<E> {
+            val registry = Registry(key, E::class.java, !internal)
+            for (e in E::class.java.enumConstants) {
+                registry.register(keyFactory(e), e)
+            }
+
+            return registry
+        }
     }
 
     val idCodec: Codec<ResourceKey<T>> by lazy { provideIdCodec() }
+    val idValueCodec: Codec<T> by lazy { provideIdCodec().xmap(
+        this::getOrThrow,
+        this::resourceKeyByValue
+    ) }
 
     @Suppress("UNCHECKED_CAST")
     val mapTypeToken: TypeToken<Map<Key, T>> =

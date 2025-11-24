@@ -8,9 +8,6 @@ import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.AnimateS2CPacket
 import dev.ng5m.player.Hand
 import dev.ng5m.player.Player
-import dev.ng5m.util.math.Vector3i
-import dev.ng5m.util.toDoubles
-import dev.ng5m.util.toInts
 import dev.ng5m.world.Location
 import net.kyori.adventure.text.Component
 
@@ -155,7 +152,12 @@ object PlayC2SHandlers {
         when (packet.type) {
             InteractC2SPacket.Type.ATTACK -> entity.onAttacked(connection.player, packet.sneaking)
             InteractC2SPacket.Type.INTERACT -> entity.onInteracted(connection.player, packet.hand!!, packet.sneaking)
-            InteractC2SPacket.Type.INTERACT_AT -> entity.onInteractedAt(connection.player, packet.hand!!, packet.relativePos!!, packet.sneaking)
+            InteractC2SPacket.Type.INTERACT_AT -> entity.onInteractedAt(
+                connection.player,
+                packet.hand!!,
+                packet.relativePos!!,
+                packet.sneaking
+            )
         }
     }
 
@@ -277,8 +279,10 @@ object PlayC2SHandlers {
         val heldStack = connection.player.getItemInHand(packet.hand)
         heldStack.item.onInteractBlock(heldStack, connection.player, Location(world, pos), packet.hand, packet.face)
         if (!connection.player.sneaking) {
-            block.onInteract(connection.player, packet.hand, packet.face, packet.cursorPos,
-                world.getBlockEntityAt(pos.x, pos.y, pos.z))
+            block.onInteract(
+                connection.player, packet.hand, packet.face, packet.cursorPos,
+                world.getBlockEntityAt(pos.x, pos.y, pos.z)
+            )
         }
     }
 
@@ -286,8 +290,10 @@ object PlayC2SHandlers {
         val ev = PlayerMoveEvent(player, player.previousLocation, player.location)
         EventManager.fire(ev)
 
-        if (!ev.cancelled)
-            player.move()
+        if (ev.cancelled) {
+            player.teleport(player.previousLocation)
+        } else player.move()
+
     }
 
     private fun validateMove(connection: MinecraftConnection): Boolean = !connection.syncingPosition

@@ -1,6 +1,6 @@
 package dev.ng5m.data
 
-import dev.ng5m.MinecraftServer
+import com.google.gson.reflect.TypeToken
 import dev.ng5m.MinecraftServer.Companion.GSON
 import dev.ng5m.block.Block
 import dev.ng5m.block.BlockState
@@ -9,14 +9,15 @@ import dev.ng5m.registry.Registries
 import dev.ng5m.registry.Registry
 import dev.ng5m.util.Properties
 import dev.ng5m.util.mapTags
+import dev.ng5m.util.readFileOrResourceAsString
+import dev.ng5m.util.resourceExists
 import net.kyori.adventure.key.Key
-import java.nio.file.Files
 import kotlin.collections.iterator
 import kotlin.reflect.full.declaredMemberProperties
 
 fun loadBlocks() {
     val obj = GSON.fromJson(
-        Files.readString(Registry.DATA_PATH.resolve("blocks.json")),
+        readFileOrResourceAsString(Registry.DATA_PATH.resolve("blocks.json")),
         object : com.google.gson.reflect.TypeToken<Map<String, BlocksReportTemplate>>() {})
 
     for (field in Blocks::class.declaredMemberProperties) {
@@ -98,22 +99,22 @@ private fun flattenTags(map: Map<String, List<String>>): MutableMap<String, List
 
 
 fun computeTags() {
-    for (registry in _root_ide_package_.dev.ng5m.registry.Registry.Companion.getAllRegistries()) {
-        val outPath = _root_ide_package_.dev.ng5m.registry.Registry.Companion.DATA_PATH.resolve("tags")
+    for (registry in Registry.getAllRegistries()) {
+        val outPath = Registry.DATA_PATH.resolve("tags")
             .resolve(registry.id.value() + ".json")
 
-        if (!outPath.toFile().exists()) continue
+        if (!resourceExists(outPath)) continue
 
-        val map: Map<String, List<String>> = MinecraftServer.GSON.fromJson(
-            Files.readString(outPath),
-            object : com.google.gson.reflect.TypeToken<Map<String, List<String>>>() {}
+        val map: Map<String, List<String>> = GSON.fromJson(
+            readFileOrResourceAsString(outPath),
+            object : TypeToken<Map<String, List<String>>>() {}
         )
 
         val flat: Map<String, List<String>> = flattenTags(map)
 
-        fun <T : Any> registerTagsTypeSafe(registry: dev.ng5m.registry.Registry<T>) {
+        fun <T : Any> registerTagsTypeSafe(registry: Registry<T>) {
             for (entry in flat) {
-                registry.tags[Key.key(entry.key)] = mapTags<T>(registry, entry.value)
+                registry.tags[Key.key(entry.key)] = mapTags(registry, entry.value)
             }
         }
 

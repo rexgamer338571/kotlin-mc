@@ -1,6 +1,8 @@
 package dev.ng5m.mcio
 
 import dev.ng5m.MinecraftServer
+import dev.ng5m.event.EventManager
+import dev.ng5m.event.impl.packet.C2SPacketPreHandleEvent
 import dev.ng5m.serialization.Packet
 import dev.ng5m.server.TCPServer
 import io.netty.channel.Channel
@@ -15,21 +17,24 @@ class MCHandler : ChannelInboundHandlerAdapter() {
         connection.removePlayer()
     }
 
-    override fun channelRead(ctx: ChannelHandlerContext?, msg: Any?) {
-        ctx ?: return; msg ?: return
+    override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
+        if (msg !is Packet) return
 
-        val packet: Packet = msg as Packet
 
         val connection = server.getOrRegisterConnection(ctx.channel())
+        val evPre = C2SPacketPreHandleEvent(connection, msg)
+        EventManager.fire(evPre)
+        if (evPre.cancelled()) return
+
         val protocolState = connection.protocolState
 
-        if (protocolState.shouldHandleImmediately(packet.javaClass))
+        if (protocolState.shouldHandleImmediately(msg.javaClass))
             synchronized(MinecraftServer.LOCK) {
-                connection.internalReceive(packet)
+                connection.internalReceive(msg)
             }
         else
             synchronized(MinecraftServer.LOCK) {
-                connection.receive(packet)
+                connection.receive(msg)
             }
     }
 }

@@ -2,6 +2,8 @@ package dev.ng5m.block
 
 import dev.ng5m.registry.Registries
 import dev.ng5m.registry.Registry
+import dev.ng5m.serialization.Codec
+import dev.ng5m.serialization.Transcoder
 import dev.ng5m.util.Properties
 import dev.ng5m.util.StateManager
 import net.kyori.adventure.key.Key
@@ -11,7 +13,16 @@ data class BlockState(
     val properties: Properties
 ) {
     companion object {
+        val AIR = BlockState(Blocks.AIR)
+
         val stateManager = StateManager<Block, BlockState>()
+
+        val ID_TRANSCODER = object : Transcoder<Int, BlockState> {
+            override fun to(t: Int): BlockState = stateManager.byId(t)
+            override fun from(r: BlockState): Int = stateManager.idBy(r)
+        }
+
+        val ID_CODEC: Codec<BlockState> = Codec.VARINT.xmap(ID_TRANSCODER.reverse())
 
         fun parseState(s: String): BlockState {
             val bracketIndex = s.indexOf('[')

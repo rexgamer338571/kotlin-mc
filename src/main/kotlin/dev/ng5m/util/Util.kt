@@ -8,16 +8,17 @@ import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Transcoder
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.function.Consumer
+import java.security.MessageDigest
+import java.util.function.Supplier
+import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
-import kotlin.math.ceil
-import kotlin.math.log2
 import kotlin.reflect.KClass
 
 val COMPONENT_JSON_TRANSCODER: Transcoder<Component, String> = object : Transcoder<Component, String> {
@@ -48,8 +49,39 @@ fun <T> or(a: T, fallback: T): T {
     return a
 }
 
-fun readFile(path: Path): String {
+fun readResource(path: Path): ByteArray? {
+    val stream = Thread.currentThread().contextClassLoader.getResourceAsStream(path.toString()) ?: return null
+    val ret = ByteArrayOutputStream()
+    val buf = ByteArray(1024)
+    var length: Int
+    while (true) {
+        length = stream.read(buf)
+        if (length == -1) break
+
+        ret.write(buf, 0, length)
+    }
+
+    return ret.toByteArray()
+}
+
+fun readFileOrResource(path: Path): ByteArray {
+    if (!path.exists()) {
+        return readResource(path) ?: throw RuntimeException("Resource $path not found")
+    }
+
+    return path.toFile().readBytes()
+}
+
+fun readFileOrResourceAsString(path: Path): String {
+    if (!path.exists()) {
+        return String(readResource(path) ?: throw RuntimeException("Resource $path not found"), StandardCharsets.UTF_8)
+    }
+
     return path.toFile().readText()
+}
+
+fun resourceExists(path: Path): Boolean {
+    return Thread.currentThread().contextClassLoader.getResourceAsStream(path.toString()) != null
 }
 
 fun <T : Any> mapTags(registry: Registry<T>, raw: List<String>): MutableSet<ResourceKey<T>> {
@@ -190,4 +222,17 @@ infix fun Byte.and(other: Byte): Byte {
 
 fun bitsToRepresent(v: Int): Int {
     return Int.SIZE_BITS - Integer.numberOfLeadingZeros(v)
+}
+
+fun unTrimUUID(trimmed: String): String {
+    if (trimmed.count() { it == '-' } == 4) return trimmed
+    return "${trimmed.take(8)}-${trimmed.substring(8, 12)}-${trimmed.substring(12, 16)}-${trimmed.substring(16, 20)}-${trimmed.substring(20)}"
+}
+
+fun <T> getIf(cond: Boolean, getter: Supplier<T>): T? = if (cond) getter.get() else null
+
+fun sha1(input: ByteArray): String {
+    val md = MessageDigest.getInstance("SHA-1")
+    md.update(input)
+    return md.digest().joinToString("") { "%02x".format(it) }
 }

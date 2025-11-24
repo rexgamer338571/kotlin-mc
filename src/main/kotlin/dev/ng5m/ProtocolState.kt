@@ -4,7 +4,10 @@ import dev.ng5m.packet.PacketHandler
 import dev.ng5m.packet.PacketHandlerContext
 import dev.ng5m.packet.common.CommonHandlers
 import dev.ng5m.packet.common.PluginMessagePacket
+import dev.ng5m.packet.common.c2s.ResourcePackResponseC2SPacket
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
+import dev.ng5m.packet.common.s2c.ResourcePackPushS2CPacket
+import dev.ng5m.packet.common.s2c.TransferS2CPacket
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.configuration.c2s.AckFinishConfigurationC2SPacket
 import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
@@ -86,7 +89,8 @@ class ProtocolState {
 
             register(ClientInformationC2SPacket::class).handler(ConfigurationC2SHandlers::clientInformation)
             register(0x02, PluginMessagePacket::class).immediateHandling().handler(CommonHandlers::pluginMessage)
-            register(0x03, AckFinishConfigurationC2SPacket::class.java).immediateHandling().handler(ConfigurationC2SHandlers::ackFinishConfiguration)
+            register(0x03, AckFinishConfigurationC2SPacket::class).immediateHandling().handler(ConfigurationC2SHandlers::ackFinishConfiguration)
+            register(0x06, ResourcePackResponseC2SPacket::class).handler(CommonHandlers::resourcePackResponse)
             register(0x07, KnownPacksPacket::class).handler(ConfigurationC2SHandlers::knownPacks)
 
             switchFlow()
@@ -94,6 +98,8 @@ class ProtocolState {
             register(0x01, PluginMessagePacket::class)
             register(0x03, FinishConfigurationS2CPacket::class)
             register(0x07, RegistryDataS2CPacket::class)
+            register(0x09, ResourcePackPushS2CPacket::class)
+            register(0x0B, TransferS2CPacket::class)
             register(0x0D, UpdateTagsS2CPacket::class)
             register(0x0E, KnownPacksPacket::class)
         }
@@ -118,6 +124,7 @@ class ProtocolState {
             register(0x28, PlayerCommandC2SPacket::class).handler(PlayC2SHandlers::playerCommand)
             register(0x29, PlayerInputC2SPacket::class).handler(PlayC2SHandlers::input)
             register(0x2A, PlayerLoadedC2SPacket::class).handler(PlayC2SHandlers::loaded)
+            register(0x2F, ResourcePackResponseC2SPacket::class).handler(CommonHandlers::resourcePackResponse)
             register(0x33, SetCarriedItemC2SPacket::class).handler(PlayC2SHandlers::setCarriedItem)
             register(0x36, SetCreativeModeSlotC2SPacket::class).excludeFromLogging().handler(PlayC2SHandlers::setCreativeModeSlot)
             register(0x3A, SwingArmC2SPacket::class).handler(PlayC2SHandlers::swingArm)
@@ -147,13 +154,17 @@ class ProtocolState {
             register(0x42, PlayerPosS2CPacket::class)
             register(0x43, PlayerRotationS2CPacket::class)
             register(0x47, RemoveEntitiesS2CPacket::class)
+            register(0x4B, ResourcePackPushS2CPacket::class)
             register(0x4D, RotateHeadS2CPacket::class)
             register(0x58, SetCenterChunkS2CPacket::class)
             register(0x5A, SetCursorItemS2CPacket::class)
             register(0x5D, SetEntityDataS2CPacket::class)
+            register(0x5F, SetEntityMotionS2CPacket::class)
             register(0x63, SetHeldSlotS2CPacket::class)
+            register(0x67, SetPlayerTeamS2CPacket::class)
             register(0x73, SystemChatS2CPacket::class)
             register(0x74, TabListS2CPacket::class).excludeFromLogging()
+            register(0x7A, TransferS2CPacket::class)
         }
 
     }

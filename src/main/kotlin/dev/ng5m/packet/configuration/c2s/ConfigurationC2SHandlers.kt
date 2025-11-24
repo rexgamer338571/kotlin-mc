@@ -3,9 +3,11 @@ package dev.ng5m.packet.configuration.c2s
 import dev.ng5m.MinecraftConnection
 import dev.ng5m.MinecraftServer
 import dev.ng5m.ProtocolState
+import dev.ng5m.Teams
 import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.player.PlayerJoinEvent
 import dev.ng5m.event.impl.player.PlayerPreJoinEvent
+import dev.ng5m.pack.ResourcePackManager
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.play.s2c.*
 import net.kyori.adventure.text.Component
@@ -24,27 +26,20 @@ object ConfigurationC2SHandlers {
         EventManager.fire(PlayerPreJoinEvent(player))
 
         connection.sendPacket(JoinS2CPacket(player)).onFinish {
-            val map = mutableMapOf<UUID, Set<PlayerInfoUpdateS2CPacket.PlayerAction>>()
-            MinecraftServer.getInstance().getPlayers().forEach {
-                val set = mutableSetOf(
-                    PlayerInfoUpdateS2CPacket.PlayerAction.AddPlayer(
-                        it.getIdentity().username, it.getIdentity().properties
-                    ),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.InitializeChat(),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateGameMode(it.gameMode),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateListed(true),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateLatency(0),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateDisplayName(),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateListPriority(0),
-                    PlayerInfoUpdateS2CPacket.PlayerAction.UpdateOuterLayer(true)
-                )
-
-                map[it.getIdentity().getAdequateUUID()] = set
-            }
+            val entries = MinecraftServer.getInstance()
+                .getPlayers()
+                .map {
+                    PlayerInfoUpdateS2CPacket.Entry(
+                        it.getIdentity().getAdequateUUID(),
+                        it.getIdentity(), Optional.empty(),
+                        it.gameMode, true, 0, Optional.empty(),
+                        0, true
+                    )
+                }
+                .toList()
 
             val infoPacket = PlayerInfoUpdateS2CPacket(
-                EnumSet.allOf(PlayerInfoUpdateS2CPacket.PlayerAction.Type::class.java),
-                map
+                EnumSet.allOf(PlayerInfoUpdateS2CPacket.Action::class.java), entries
             )
 
             connection.sendPacket(PlayerPosS2CPacket(player, PlayerPosS2CPacket.Flags.ABSOLUTE)).onFinish {
@@ -59,7 +54,7 @@ object ConfigurationC2SHandlers {
                     MinecraftServer.getInstance().getPlayingConnections().forEach { it.sendPacket(infoPacket) }
 
                     player.getWorld().entities().forEach {
-                        connection.sendPacket(SpawnEntityS2CPacket(it))
+                        it.spawnForPlayer(player)
                     }
                 }
             }
@@ -69,13 +64,22 @@ object ConfigurationC2SHandlers {
                 player.inventory.id, player.inventory.revision(),
                 player.inventory.slots(), player.carriedItem
             ))
+
+            Teams.teams.forEach {
+                connection.sendPacket(it.createPacket())
+            }
+
             EventManager.fire(PlayerJoinEvent(player))
+
+            ResourcePackManager.send(connection)
         }
     }
 
     fun knownPacks(connection: MinecraftConnection, packet: KnownPacksPacket) {
         connection.synchronizeRegistries().onFinish {
-            connection.updateTags().onFinish { connection.finishConfiguration() }
+            connection.updateTags().onFinish {
+                connection.finishConfiguration()
+            }
         }
     }
 

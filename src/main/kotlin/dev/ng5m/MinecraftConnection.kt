@@ -16,11 +16,13 @@ import dev.ng5m.player.Player
 import dev.ng5m.registry.Registry
 import dev.ng5m.serialization.Packet
 import dev.ng5m.util.PacketSendContext
+import kotlinx.coroutines.CompletableDeferred
 import net.kyori.adventure.text.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
+import java.util.UUID
 
 abstract class MinecraftConnection : Ticking {
     companion object {
@@ -33,6 +35,8 @@ abstract class MinecraftConnection : Ticking {
     protected val receivedPackets: Queue<Packet> = LinkedList()
 
     var protocolState: ProtocolState = ProtocolState.HANDSHAKE;
+
+    val awaitedPackResponses = mutableMapOf<UUID, CompletableDeferred<Unit>>()
 
     var compression: PacketCompression? = null
 

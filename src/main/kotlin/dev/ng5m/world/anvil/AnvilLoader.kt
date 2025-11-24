@@ -194,10 +194,8 @@ class AnvilLoader(val rootWorldDir: Path) {
             buf.release()
         }
 
-        world.chunkProvider = object : ChunkProvider {
-            override fun get(world: World, x: Int, z: Int): Chunk =
-                chunkMap[World.packChunkCoordinates(x, z)] ?: Chunk(x, z, world.typeKey)
-        }
+        world.chunkProvider =
+            ChunkProvider { world, x, z -> chunkMap[World.packChunkCoordinates(x, z)] ?: Chunk(x, z, world.typeKey) }
 
         MinecraftServer.getInstance().addWorld(worldKey, world)
     }

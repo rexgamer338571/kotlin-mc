@@ -14,6 +14,8 @@ data class Property(
             Codec.STRING.nullable(), Property::signature,
             ::Property
         )
+
+        val LIST_CODEC: Codec<List<Property>> = CODEC.list()
     }
 
 }

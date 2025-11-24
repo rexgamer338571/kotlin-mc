@@ -1,6 +1,7 @@
 package dev.ng5m.event
 
 import java.util.function.Consumer
+import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.isSubtypeOf
@@ -17,9 +18,16 @@ object EventManager {
         }
     }
 
+    fun <T> fireCancellable(event: T): Boolean where T : Event, T : Cancellable {
+        fire(event)
+        return event.cancelled()
+    }
+
     fun <T : Event> register(clazz: Class<T>, handler: Consumer<T>) {
         handlers.computeIfAbsent(clazz) { _ -> mutableSetOf() }.add(handler)
     }
+
+    fun <T : Event> register(clazz: KClass<T>, handler: Consumer<T>) = register(clazz.java, handler)
 
     fun <L : EventListeners> register(instance: L) {
         for (method in instance::class.declaredMemberFunctions) {

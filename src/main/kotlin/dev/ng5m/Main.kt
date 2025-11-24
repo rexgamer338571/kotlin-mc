@@ -6,27 +6,50 @@ import de.articdive.jnoise.pipeline.JNoise
 import dev.ng5m.api.ChunkAccess
 import dev.ng5m.api.KMc
 import dev.ng5m.block.Blocks
+import dev.ng5m.entity.ArmorStandEntity
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.BlockEntityType
+import dev.ng5m.entity.DisplayEntity
 import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.event.impl.player.PlayerJoinEvent
 import dev.ng5m.event.impl.player.PlayerMoveEvent
 import dev.ng5m.event.impl.player.PlayerPreJoinEvent
+import dev.ng5m.event.impl.player.PlayerStartConfigurationEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.item.Items
+import dev.ng5m.item.component.ItemComponentTypes
+import dev.ng5m.pack.ResourcePack
+import dev.ng5m.pack.ResourcePackManager
+import dev.ng5m.pack.ResourcePackServer
+import dev.ng5m.packet.common.s2c.ResourcePackPushS2CPacket
+import dev.ng5m.packet.play.s2c.SetEntityMotionS2CPacket
+import dev.ng5m.packet.play.s2c.SyncEntityPositionS2CPacket
 import dev.ng5m.player.GameMode
+import dev.ng5m.player.Player
 import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionTypes
 import dev.ng5m.registry.Registries
 import dev.ng5m.serialization_kt.Either
 import dev.ng5m.util.TypeArguments
+import dev.ng5m.util.copy
+import dev.ng5m.util.readFileOrResource
+import dev.ng5m.util.sha1
 import dev.ng5m.world.*
+import dev.ng5m.world.anvil.AnvilLoader
 import dev.ng5m.world.particle.ParticleOptions
 import dev.ng5m.world.particle.ParticleTypes
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
+import org.joml.Vector3d
+import org.joml.Vector3f
+import java.net.URI
+import java.nio.file.Path
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 
@@ -35,7 +58,7 @@ class A {
     var either: Either<String, List<String>>? = null
 }
 
-fun main() {
+fun randomBullshitServer() {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
 
 
@@ -242,6 +265,50 @@ fun main() {
             )
 
         tabList.update(it.connection)
+    }
+
+    server.run(25565)
+}
+
+fun main() {
+    simpleServer()
+}
+
+const val RPS_PORT = 9898
+
+fun simpleServer() {
+    val server = MinecraftServer()
+
+    val rp = ResourcePack(
+        "", URI.create("https://ng5m.dev/ntransfer/5c21b471").toURL(), true
+    )
+
+    ResourcePackManager.addPack(rp)
+
+    val rps = ResourcePackServer()
+
+    rps.start(RPS_PORT)
+
+    val world = server.createWorld(DimensionTypes.OVERWORLD, Key.key("test", "world"))
+
+    world.chunkGenerator = ChunkGenerator { ctx ->
+        for (x in 0 until 16) {
+            for (z in 0 until 16) {
+                ctx.setBlockAt(x, 0, z, Blocks.BEDROCK)
+            }
+        }
+    }
+
+    world.spawnEntity(Location(world, 10.0, 1.0, 0.0), DisplayEntity.ItemDisplayEntity()
+        .also {
+            it.item = ItemStack(Items.NETHERITE_AXE)
+            it.scale = Vector3f(10f, 2f, 0.5f)
+        })
+
+    EventManager.register(PlayerPreJoinEvent::class) { event ->
+        event.player.setWorld(world)
+        event.player.location = Location(world, 0.0, 10.0, 0.0)
+        event.player.gameMode = GameMode.CREATIVE
     }
 
     server.run(25565)

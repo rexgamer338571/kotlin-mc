@@ -1,6 +1,12 @@
 package dev.ng5m.util
 
+import dev.ng5m.registry.Registry
+import dev.ng5m.registry.ResourceKey
 import dev.ng5m.serialization.Codec
+import dev.ng5m.serialization.Transcoder
+import io.netty.buffer.ByteBuf
+import net.kyori.adventure.key.Key
+import org.joml.Quaternionf
 import org.joml.Vector3d
 import org.joml.Vector3f
 import org.joml.Vector3i
@@ -27,6 +33,14 @@ val CODEC_VECTOR3D: Codec<Vector3d> = Codec.of(
     ::Vector3d
 )
 
+val CODEC_QUATERNIONF: Codec<Quaternionf> = Codec.of(
+    Codec.FLOAT, { it.x },
+    Codec.FLOAT, { it.y },
+    Codec.FLOAT, { it.z },
+    Codec.FLOAT, { it.w },
+    ::Quaternionf
+)
+
 val CODEC_POSITION: Codec<Vector3i> = Codec.of(
     { buf ->
         val l = buf.readLong()
@@ -41,6 +55,7 @@ fun Vector3d.of(x: Long, y: Long, z: Long): Vector3d = Vector3d(x.toDouble(), y.
 fun Vector3d.copy(): Vector3d = Vector3d(x, y, z)
 inline fun Vector3d.transform(crossinline transform: (Double) -> Double) =
     Vector3d(transform(x), transform(y), transform(z))
+
 fun Vector3d.toInts(): Vector3i = Vector3i(x.toInt(), y.toInt(), z.toInt())
 fun Vector3f.toInts(): Vector3i = Vector3i(x.toInt(), y.toInt(), z.toInt())
 fun Vector3i.toDoubles(): Vector3d = Vector3d(x.toDouble(), y.toDouble(), z.toDouble())
@@ -52,3 +67,26 @@ fun <T : Any> Codec<T>.nullable(): Codec<T?> = this.prefixedOptional().xmap<T>(
 inline fun <reified E : Enum<E>> ofEnum(): Codec<E> = Codec.ofEnum(E::class.java)
 
 fun <T : Any> Codec<T>.forType(kClass: KClass<T>): Codec<T> = this.forType(kClass.java)
+
+fun <T : Any> idOrTCodec(registry: Registry<T>, valueCodec: Codec<T>): Codec<ResourceKey<T>> = Codec.of(
+    { buf ->
+        val id = Codec.VARINT.read(buf)
+        return@of if (id == 0) registry.resourceKeyByValue(valueCodec.read(buf)) else registry.keyById(id - 1)
+    },
+    registry.idCodec::write
+)
+
+fun writeIdSet(buf: ByteBuf, tag: Key) {
+    buf.writeByte(0)
+    Codec.KEY.write(buf, tag)
+}
+
+fun <T : Any> writeIdSet(buf: ByteBuf, registry: Registry<T>, ids: Collection<ResourceKey<T>>) {
+    buf.writeByte(ids.size + 1)
+    for (key in ids) {
+        Codec.VARINT.write(buf, registry.idByKey(key))
+    }
+}
+
+inline fun <reified E : Enum<E>> byteEnumTranscoder(): Transcoder<E, Byte> =
+    Transcoder.of({ it.ordinal.toByte() }, { E::class.java.enumConstants[it.toInt()] })

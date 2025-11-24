@@ -1,186 +1,163 @@
 package dev.ng5m.packet.play.s2c
 
-import dev.ng5m.packet.play.s2c.PlayerInfoUpdateS2CPacket.PlayerAction.AddPlayer.Companion
 import dev.ng5m.player.GameMode
-import dev.ng5m.player.Player
+import dev.ng5m.player.Identity
 import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.Packet
 import dev.ng5m.util.Property
-import dev.ng5m.util.U4
+import dev.ng5m.util.getIf
+import dev.ng5m.util.nullable
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.Unpooled
 import net.kyori.adventure.text.Component
-import java.util.BitSet
 import java.util.EnumSet
 import java.util.Optional
 import java.util.UUID
 
-data class PlayerInfoUpdateS2CPacket(val actions: EnumSet<PlayerAction.Type>, val entries: Map<UUID, Set<PlayerAction>>) : Packet {
+data class PlayerInfoUpdateS2CPacket(val actions: EnumSet<Action>, val entries: List<Entry>) : Packet {
     companion object {
+        private val ACTION_SET_CODEC: Codec<EnumSet<Action>> = Codec.enumSet(Action::class.java)
+
         val CODEC: Codec<PlayerInfoUpdateS2CPacket> = Codec.of(
             { buf ->
-                val enumSet = BitSet.valueOf(ByteArray(1) { buf.readByte() })
-                val length = Codec.VARINT.read(buf)
-
-                val ret = mutableMapOf<UUID, Set<PlayerAction>>()
-
-                for (i in 0 until length) {
-                    val actions = mutableSetOf<PlayerAction>()
-                    val uuid = Codec.UUID.read(buf)
-
-                    for (type in PlayerAction.Type.entries) {
-                        if (!enumSet.get(type.ordinal)) continue
-
-                        actions.add(type.codec.read(buf))
-                    }
-
-                    ret[uuid] = actions
+                val actions = ACTION_SET_CODEC.read(buf)
+                val entries = mutableListOf<Entry>()
+                for (i in 0 until Codec.VARINT.read(buf)) {
+                    entries.add(Entry.readEntry(buf, actions))
                 }
 
-                return@of PlayerInfoUpdateS2CPacket(EnumSet.noneOf(PlayerAction.Type::class.java), ret)
+                PlayerInfoUpdateS2CPacket(actions, entries)
             },
             { buf, packet ->
-                Codec.enumSet(PlayerAction.Type::class.java).write(buf, packet.actions)
+                ACTION_SET_CODEC.write(buf, packet.actions)
 
                 Codec.VARINT.write(buf, packet.entries.size)
                 for (entry in packet.entries) {
-                    val value = entry.value.toList()
-                    Codec.UUID.write(buf, entry.key)
-
-                    var index = 0
-                    for (action in packet.actions) {
-                        @Suppress("UNCHECKED_CAST")
-                        (action.codec as Codec<PlayerAction>).write(buf, value[index++])
-                    }
+                    Entry.writeEntry(buf, entry)
                 }
             }
         ).forType(PlayerInfoUpdateS2CPacket::class.java)
+
+
+        fun addPlayer(uuid: UUID, identity: Identity): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.ADD_PLAYER), listOf(Entry(uuid, identity)))
+        fun initializeChat(uuid: UUID, chatData: ChatData?): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.INITIALIZE_CHAT), listOf(Entry(uuid, chatData = Optional.ofNullable(chatData))))
+        fun updateGameMode(uuid: UUID, gameMode: GameMode): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_GAME_MODE), listOf(Entry(uuid, gameMode = gameMode)))
+        fun updateListed(uuid: UUID, listed: Boolean): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_LISTED), listOf(Entry(uuid, listed = listed)))
+        fun updateLatency(uuid: UUID, pingMs: Int): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_LATENCY), listOf(Entry(uuid, pingMs = pingMs)))
+        fun updateDisplayName(uuid: UUID, displayName: Component?): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_DISPLAY_NAME), listOf(Entry(uuid, displayName = Optional.ofNullable(displayName))))
+        fun updateListPriority(uuid: UUID, listPriority: Int): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_LIST_PRIORITY), listOf(Entry(uuid, listPriority = listPriority)))
+        fun updateOuterLayer(uuid: UUID, outerLayer: Boolean): PlayerInfoUpdateS2CPacket =
+            PlayerInfoUpdateS2CPacket(EnumSet.of(Action.UPDATE_OUTER_LAYER), listOf(Entry(uuid, outerLayer = outerLayer)))
     }
 
-    sealed interface PlayerAction {
-        fun write(buf: ByteBuf)
-        fun type(): Type
-
-        enum class Type(val codec: Codec<out PlayerAction>) {
-            ADD_PLAYER(AddPlayer.CODEC),
-            INITIALIZE_CHAT(InitializeChat.CODEC),
-            UPDATE_GAME_MODE(UpdateGameMode.CODEC),
-            UPDATE_LISTED(UpdateListed.CODEC),
-            UPDATE_LATENCY(UpdateLatency.CODEC),
-            UPDATE_DISPLAY_NAME(UpdateDisplayName.CODEC),
-            UPDATE_LIST_PRIORITY(UpdateListPriority.CODEC),
-            UPDATE_OUTER_LAYER(UpdateOuterLayer.CODEC);
-
-            companion object {
-                val ENUM_SET_CODEC: Codec<EnumSet<Type>> = Codec.enumSet(Type::class.java)
-            }
-        }
-
-        data class AddPlayer(val name: String, val properties: List<Property>) : PlayerAction {
-            companion object {
-                val CODEC: Codec<AddPlayer> = Codec.of(
-                    Codec.STRING, { it.name },
-                    Property.CODEC.list(), { it.properties },
-                    ::AddPlayer
+    data class Entry(
+        val uuid: UUID,
+        val identity: Identity? = null,
+        val chatData: Optional<ChatData>? = null,
+        val gameMode: GameMode? = null,
+        val listed: Boolean? = null,
+        val pingMs: Int? = null,
+        val displayName: Optional<Component>? = null,
+        val listPriority: Int? = null,
+        val outerLayer: Boolean? = null
+    ) {
+        companion object {
+            fun readEntry(buf: ByteBuf, actions: EnumSet<Action>): Entry {
+                val uuid = Codec.UUID.read(buf)
+                return Entry(
+                    uuid,
+                    identity = getIf(Action.ADD_PLAYER in actions) {
+                        Identity(
+                            Codec.STRING.read(buf), uuid, Property.LIST_CODEC.read(buf)
+                        )
+                    },
+                    chatData = getIf(Action.INITIALIZE_CHAT in actions) { ChatData.CODEC.prefixedOptional().read(buf) },
+                    gameMode = getIf(Action.UPDATE_GAME_MODE in actions) { GameMode.entries[Codec.VARINT.read(buf)] },
+                    listed = getIf(Action.UPDATE_LISTED in actions) { buf.readBoolean() },
+                    pingMs = getIf(Action.UPDATE_LATENCY in actions) { Codec.VARINT.read(buf) },
+                    displayName = getIf(Action.UPDATE_DISPLAY_NAME in actions) {
+                        Codec.TEXT_COMPONENT.prefixedOptional().read(buf)
+                    },
+                    listPriority = getIf(Action.UPDATE_LIST_PRIORITY in actions) { Codec.VARINT.read(buf) },
+                    outerLayer = getIf(Action.UPDATE_OUTER_LAYER in actions) { buf.readBoolean() }
                 )
             }
 
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.ADD_PLAYER
-        }
+            fun writeEntry(buf: ByteBuf, entry: Entry) {
+                Codec.UUID.write(buf, entry.uuid)
 
-        data class InitializeChat(val union: Optional<U4<UUID, Long, ByteArray, ByteArray>>) : PlayerAction {
-            companion object {
-                val CODEC: Codec<InitializeChat> = Codec.of(
-                    U4.codec(
-                        Codec.UUID,
-                        Codec.LONG,
-                        Codec.BYTE_ARRAY,
-                        Codec.BYTE_ARRAY
-                    ).prefixedOptional(), { it.union },
-                    ::InitializeChat
-                )
+                entry.identity?.let {
+                    Codec.STRING.write(buf, it.username)
+                    Property.LIST_CODEC.write(buf, it.properties)
+                }
+                entry.chatData?.let { ChatData.CODEC.prefixedOptional().write(buf, it) }
+                entry.gameMode?.let { Codec.VARINT.write(buf, it.ordinal) }
+                entry.listed?.let { buf.writeBoolean(it) }
+                entry.pingMs?.let { Codec.VARINT.write(buf, it) }
+                entry.displayName?.let { Codec.TEXT_COMPONENT.prefixedOptional().write(buf, it) }
+                entry.listPriority?.let { Codec.VARINT.write(buf, it) }
+                entry.outerLayer?.let { buf.writeBoolean(it) }
             }
 
-            constructor(
-                chatSessionID: UUID, pubKeyExpiryTime: Long,
-                pubKey: ByteArray, pubKeySignature: ByteArray
-            ) : this(Optional.of(U4(chatSessionID, pubKeyExpiryTime, pubKey, pubKeySignature)))
+        }
+    }
 
-            constructor() : this(Optional.empty())
-
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.INITIALIZE_CHAT
-
+    data class ChatData(
+        val chatSessionId: UUID,
+        val publicKeyExpiryTime: Long,
+        val encodedPublicKey: ByteArray,
+        val publicKeySignature: ByteArray
+    ) {
+        companion object {
+            val CODEC: Codec<ChatData> = Codec.of(
+                Codec.UUID, { it.chatSessionId },
+                Codec.LONG, { it.publicKeyExpiryTime },
+                Codec.BYTE_ARRAY, { it.encodedPublicKey },
+                Codec.BYTE_ARRAY, { it.publicKeySignature },
+                ::ChatData
+            )
         }
 
-        data class UpdateGameMode(val gameMode: GameMode) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateGameMode> = Codec.of(
-                    Codec.ofEnum(GameMode::class.java), { it.gameMode }, ::UpdateGameMode
-                )
-            }
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
 
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_GAME_MODE
+            other as ChatData
+
+            if (publicKeyExpiryTime != other.publicKeyExpiryTime) return false
+            if (chatSessionId != other.chatSessionId) return false
+            if (!encodedPublicKey.contentEquals(other.encodedPublicKey)) return false
+            if (!publicKeySignature.contentEquals(other.publicKeySignature)) return false
+
+            return true
         }
 
-        data class UpdateListed(val listed: Boolean) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateListed> = Codec.of(
-                    Codec.BOOLEAN, { it.listed }, ::UpdateListed
-                )
-            }
-
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_LISTED
+        override fun hashCode(): Int {
+            var result = publicKeyExpiryTime.hashCode()
+            result = 31 * result + chatSessionId.hashCode()
+            result = 31 * result + encodedPublicKey.contentHashCode()
+            result = 31 * result + publicKeySignature.contentHashCode()
+            return result
         }
 
-        data class UpdateLatency(val latencyMS: Int) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateLatency> = Codec.of(
-                    Codec.VARINT, { it.latencyMS }, ::UpdateLatency
-                )
-            }
+    }
 
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_LATENCY
-        }
-
-        data class UpdateDisplayName(val displayName: Optional<Component>) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateDisplayName> = Codec.of(
-                    Codec.TEXT_COMPONENT.prefixedOptional(), { it.displayName }, ::UpdateDisplayName
-                )
-            }
-
-            constructor() : this(Optional.empty())
-            constructor(displayName: Component) : this(Optional.of(displayName))
-
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_DISPLAY_NAME
-        }
-
-        data class UpdateListPriority(val priority: Int) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateListPriority> = Codec.of(
-                    Codec.VARINT, { it.priority }, ::UpdateListPriority
-                )
-            }
-
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_LIST_PRIORITY
-        }
-
-        data class UpdateOuterLayer(val shown: Boolean) : PlayerAction {
-            companion object {
-                val CODEC: Codec<UpdateOuterLayer> = Codec.of(
-                    Codec.BOOLEAN, { it.shown }, ::UpdateOuterLayer
-                )
-            }
-
-            override fun write(buf: ByteBuf) = CODEC.write(buf, this)
-            override fun type(): Type = Type.UPDATE_OUTER_LAYER
-        }
+    enum class Action {
+        ADD_PLAYER,
+        INITIALIZE_CHAT,
+        UPDATE_GAME_MODE,
+        UPDATE_LISTED,
+        UPDATE_LATENCY,
+        UPDATE_DISPLAY_NAME,
+        UPDATE_LIST_PRIORITY,
+        UPDATE_OUTER_LAYER;
     }
 
 }

@@ -20,17 +20,11 @@ class TabList {
 
     fun update(connection: MinecraftConnection) {
         connection.sendPacket(TabListS2CPacket(header, footer))
-        for ((uuid, index) in players) {
-            connection.sendPacket(
-                PlayerInfoUpdateS2CPacket(
-                    EnumSet.of(
-                        PlayerInfoUpdateS2CPacket.PlayerAction.Type.UPDATE_LIST_PRIORITY
-                    ),
-                    mapOf(
-                        uuid to setOf(PlayerInfoUpdateS2CPacket.PlayerAction.UpdateListPriority(index))
-                    )
-                )
-            )
-        }
+        connection.sendPacket(PlayerInfoUpdateS2CPacket(
+            EnumSet.of(PlayerInfoUpdateS2CPacket.Action.UPDATE_LIST_PRIORITY),
+            players.map { (uuid, index) ->
+                PlayerInfoUpdateS2CPacket.Entry(uuid, listPriority = index)
+            }
+        ))
     }
 }

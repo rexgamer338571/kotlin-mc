@@ -7,6 +7,7 @@ import java.util.UUID
 data class PlayerInfoRemoveS2CPacket(val uuids: List<UUID>) : Packet {
     companion object {
         val CODEC: Codec<PlayerInfoRemoveS2CPacket> = Codec.UUID.list().xmap(::PlayerInfoRemoveS2CPacket) { it.uuids }
+            .forType(PlayerInfoRemoveS2CPacket::class.java)
     }
 
     constructor(vararg uuids: UUID) : this(uuids.toList())

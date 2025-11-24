@@ -2,7 +2,7 @@ package dev.ng5m.block
 
 import org.joml.Vector3i
 
-
+typealias Direction = Face
 enum class Face(val direction: Vector3i) {
     BOTTOM(Vector3i(0, -1, 0)),
     TOP(Vector3i(0, 1, 0)),

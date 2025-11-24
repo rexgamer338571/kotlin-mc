@@ -3,3 +3,5 @@ plugins {
 }
 rootProject.name = "kotlin-mc"
 
+
+include("kotlin-mc-types")

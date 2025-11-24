@@ -3,11 +3,15 @@ package dev.ng5m.packet.login.c2s
 import dev.ng5m.MinecraftConnection
 import dev.ng5m.MinecraftServer
 import dev.ng5m.ProtocolState
+import dev.ng5m.event.EventManager
+import dev.ng5m.event.impl.player.PlayerStartConfigurationEvent
+import dev.ng5m.pack.ResourcePackManager
 import dev.ng5m.packet.common.PluginMessagePacket
 import dev.ng5m.packet.login.s2c.LoginSuccessS2CPacket
 import dev.ng5m.player.Player
 import dev.ng5m.serialization.Codec
 import io.netty.buffer.Unpooled
+import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.key.Key
 
 object LoginC2SHandlers {
@@ -22,6 +26,9 @@ object LoginC2SHandlers {
 
     fun loginAck(connection: MinecraftConnection, packet: LoginAckC2SPacket) {
         connection.protocolState = ProtocolState.CONFIGURATION
+
+        EventManager.fire(PlayerStartConfigurationEvent(connection))
+
 
         val brandLength = MinecraftServer.getInstance().brand.length
         val buf = Unpooled.buffer(Codec.VARINT.varintSize(brandLength) + brandLength)

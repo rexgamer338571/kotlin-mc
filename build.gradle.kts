@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.1.0"
     id("application")
+    `maven-publish`
 
     java
 }
@@ -37,6 +38,10 @@ dependencies {
     implementation("org.graalvm.polyglot:polyglot:25.0.1")
     implementation("org.graalvm.polyglot:js:25.0.1")
 
+    implementation("com.github.luben:zstd-jni:1.5.7-6")
+
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+
 }
 
 sourceSets {
@@ -60,4 +65,26 @@ kotlin {
 
 application {
     mainClass = "dev.ng5m.MainKt"
+}
+
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
+artifacts {
+    add("archives", sourcesJar)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+
+            from(components["java"])
+            artifact(sourcesJar.get())
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package dev.ng5m.entity
 
+import dev.ng5m.entity.DisplayEntity.TextDisplayEntity
 import dev.ng5m.player.Player
 import dev.ng5m.registry.Registries.ENTITY_TYPE
 import dev.ng5m.util.AABB
@@ -40,7 +41,10 @@ data class EntityType(
 
         val ARMOR_STAND = ENTITY_TYPE.register(
             Key.key("armor_stand"),
-            Builder().dimensions(0.5, 1.975).build()
+            Builder()
+                .dimensions(0.5, 1.975)
+                .factory { ArmorStandEntity() }
+                .build()
         )
 
         val ARROW = ENTITY_TYPE.register(
@@ -90,7 +94,9 @@ data class EntityType(
 
         val BLOCK_DISPLAY = ENTITY_TYPE.register(
             Key.key("block_display"),
-            Builder().dimensions(0.7, 0.65).build()
+            Builder().dimensions(0.7, 0.65)
+                .factory { DisplayEntity.BlockDisplayEntity() }
+                .build()
         )
 
         val BOGGED = ENTITY_TYPE.register(
@@ -355,7 +361,9 @@ data class EntityType(
 
         val ITEM_DISPLAY = ENTITY_TYPE.register(
             Key.key("item_display"),
-            Builder().build()
+            Builder()
+                .factory { DisplayEntity.ItemDisplayEntity() }
+                .build()
         )
 
         val ITEM_FRAME = ENTITY_TYPE.register(
@@ -630,7 +638,9 @@ data class EntityType(
 
         val TEXT_DISPLAY = ENTITY_TYPE.register(
             Key.key("text_display"),
-            Builder().build()
+            Builder()
+                .factory { TextDisplayEntity() }
+                .build()
         )
 
         val TNT = ENTITY_TYPE.register(

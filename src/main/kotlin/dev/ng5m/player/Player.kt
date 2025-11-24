@@ -2,17 +2,23 @@ package dev.ng5m.player
 
 import dev.ng5m.MinecraftConnection
 import dev.ng5m.MinecraftServer
+import dev.ng5m.entity.EntityMetadata
+import dev.ng5m.entity.EntityMetadata.Type
 import dev.ng5m.entity.EntityType
 import dev.ng5m.entity.ItemEntity
 import dev.ng5m.entity.LivingEntity
+import dev.ng5m.entity.MetadataProperty
 import dev.ng5m.entity.inventory.Inventory
 import dev.ng5m.entity.inventory.PlayerInventory
 import dev.ng5m.entity.inventory.TitledInventory
 import dev.ng5m.item.ItemStack
-import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
+import dev.ng5m.packet.common.s2c.TransferS2CPacket
 import dev.ng5m.packet.configuration.c2s.ClientInformationC2SPacket
 import dev.ng5m.packet.play.s2c.*
+import dev.ng5m.packet.play.s2c.PlayerPosS2CPacket.Flags
 import dev.ng5m.registry.ResourceKey
+import dev.ng5m.serialization.Transcoder
+import dev.ng5m.serialization.nbt.impl.CompoundTag
 import dev.ng5m.util.IntTracker
 import dev.ng5m.util.PacketSendContext
 import dev.ng5m.util.copy
@@ -23,6 +29,7 @@ import dev.ng5m.world.World
 import dev.ng5m.world.particle.ParticleOptions
 import dev.ng5m.world.particle.ParticleType
 import net.kyori.adventure.text.Component
+import org.joml.Vector3d
 import java.util.Optional
 import kotlin.math.min
 import kotlin.math.round
@@ -30,6 +37,13 @@ import kotlin.properties.Delegates
 
 class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) {
     companion object {
+        val METADATA_ADDITIONAL_HEARTS = EntityMetadata.Index(15, Type.FLOAT, 0f)
+        val METADATA_SCORE = EntityMetadata.Index(16, Type.VARINT, 0)
+        val METADATA_SKIN_PARTS = EntityMetadata.Index(17, Type.BYTE, 0.toByte())
+        val METADATA_MAIN_HAND = EntityMetadata.Index(18, Type.BYTE, 1.toByte())
+        val METADATA_LEFT_SHOULDER = EntityMetadata.Index(19, Type.NBT_TAG, CompoundTag())
+        val METADATA_RIGHT_SHOULDER = EntityMetadata.Index(20, Type.NBT_TAG, CompoundTag())
+
         fun makeUnsafe(id: Int): Player {
             return Player(id)
         }
@@ -56,8 +70,9 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
     var simulationDistance: Int = MinecraftServer.getInstance().simulationDistance
     lateinit var chatMode: ChatMode
     var chatColors by Delegates.notNull<Boolean>()
-    private var displayedSkinParts: SkinParts = SkinParts()
-    private var mainHand: Hand = Hand.RIGHT
+
+    var skinParts: SkinParts by MetadataProperty(metadata, METADATA_SKIN_PARTS, Transcoder.of(SkinParts::pack, SkinParts::unpack))
+    var mainHand: Hand by MetadataProperty(metadata, METADATA_MAIN_HAND, Transcoder.of({ it.ordinal.toByte() }, { Hand.entries[it.toInt()] }))
     private var enableTextFiltering: Boolean = false
     private var allowServerListings: Boolean = true
     private var particleStatus: ParticleStatus = ParticleStatus.ALL
@@ -77,14 +92,13 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
     private val viewedChunks: MutableSet<Long> = mutableSetOf()
 
-    var sprinting = false
     var sneaking = false
 
     fun applyClientInformation(packet: ClientInformationC2SPacket) {
         locale = packet.locale
         viewDistance = min(packet.viewDistance.toInt(), MinecraftServer.getInstance().serverViewDistance)
         chatMode = packet.chatMode
-        displayedSkinParts = packet.skinParts
+        skinParts = packet.skinParts
         mainHand = packet.mainHand
         enableTextFiltering = packet.enableTextFiltering
         allowServerListings = packet.allowServerListings
@@ -283,6 +297,31 @@ class Player private constructor(id: Int) : LivingEntity(EntityType.PLAYER, id) 
 
         viewedChunks.clear()
         viewedChunks.addAll(current)
+    }
+
+    fun transfer(host: String, port: Int = 25565) {
+        connection.sendPacket(TransferS2CPacket(host, port))
+    }
+
+    fun teleport(location: Location) {
+        if (location.world != getWorld()) {
+            location.world.addEntity(this)
+        }
+
+        connection.sendPacket(PlayerPosS2CPacket(
+            teleportIdTracker.next(), location.xyz, Vector3d(0.0, 0.0, 0.0),
+            location.yaw, location.pitch, Flags.ABSOLUTE
+        ))
+
+        this.location = location
+
+
+        location.world.entities()
+            .filter { it is Player && it != this }
+            .map { it as Player }
+            .forEach {
+                it.connection.sendPacket(SyncEntityPositionS2CPacket(this))
+            }
     }
 
     fun getOtherPlayers(): Collection<Player> {

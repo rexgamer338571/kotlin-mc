@@ -1,3 +1,5 @@
 package dev.ng5m.event
 
-interface Cancellable
+interface Cancellable {
+    fun cancelled(): Boolean
+}

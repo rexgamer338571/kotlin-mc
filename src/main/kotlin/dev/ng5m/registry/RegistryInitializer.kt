@@ -1,7 +1,7 @@
 package dev.ng5m.registry
 
 import dev.ng5m.MinecraftServer
-import dev.ng5m.util.readFile
+import dev.ng5m.util.readFileOrResourceAsString
 import net.kyori.adventure.key.Key
 
 abstract class RegistryInitializer<T : Any>(private val registry: Registry<T>) {
@@ -25,7 +25,7 @@ abstract class RegistryInitializer<T : Any>(private val registry: Registry<T>) {
 
     private fun <T> load(registryKey: Key): Map<Key, T> {
         return MinecraftServer.GSON.fromJson(
-            readFile(
+            readFileOrResourceAsString(
                 Registry.DATA_PATH.resolve("${registryKey.value()}.json")
             ),
             registry.mapTypeToken.type

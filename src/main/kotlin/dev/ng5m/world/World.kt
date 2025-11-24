@@ -1,11 +1,13 @@
 package dev.ng5m.world
 
+import dev.ng5m.LOGGER
 import dev.ng5m.MinecraftServer
 import dev.ng5m.block.Block
 import dev.ng5m.block.BlockState
 import dev.ng5m.block.Blocks
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.Entity
+import dev.ng5m.entity.EntityType
 import dev.ng5m.entity.ItemEntity
 import dev.ng5m.item.ItemStack
 import dev.ng5m.packet.play.s2c.RemoveEntitiesS2CPacket
@@ -89,6 +91,21 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
     fun spawnEntity(location: Location, entity: Entity) {
         entity.location = location.clone()
         addEntity(entity)
+    }
+
+    inline fun <reified T : Entity> spawnEntity(type: EntityType): T {
+        val entity = type.factory(type)
+        if (entity !is T) {
+            throw RuntimeException("created entity is not of type ${T::class.simpleName}")
+        }
+
+        addEntity(entity)
+
+        return entity
+    }
+
+    inline fun <reified T : Entity> spawnEntity(typeKey: ResourceKey<EntityType>): T {
+        return spawnEntity(Registries.ENTITY_TYPE.getOrThrow(typeKey))
     }
 
     fun generateChunkIfAbsent(x: Int, z: Int) {
@@ -179,7 +196,12 @@ class World(val typeKey: ResourceKey<DimensionType>, val id: Key) {
         val cx = floor(x / 16.0).toInt()
         val cz = floor(z / 16.0).toInt()
 
-        chunks[packChunkCoordinates(cx, cz)]?.setBlockStateAt(x % 16, y, z % 16, state)
+        val chunk = chunks[packChunkCoordinates(cx, cz)]
+        if (chunk == null) {
+            LOGGER.warn { "Position ($x, $y, $z) not loaded" }
+        } else {
+            chunk.setBlockStateAt(x % 16, y, z % 16, state)
+        }
     }
 
     fun setBlockStateAt(pos: Vector3i, state: BlockState) = setBlockStateAt(pos.x, pos.y, pos.x, state)

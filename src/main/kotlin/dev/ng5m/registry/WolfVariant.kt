@@ -1,9 +1,11 @@
 package dev.ng5m.registry
 
 import com.google.gson.annotations.SerializedName
+import dev.ng5m.serialization.Codec
 import dev.ng5m.serialization.util.Either
 
 class WolfVariant {
+
     @field:SerializedName("wild_texture")
     val wildTexture: String? = null
 
