@@ -3,6 +3,7 @@ package dev.ng5m
 import dev.ng5m.packet.PacketHandler
 import dev.ng5m.packet.PacketHandlerContext
 import dev.ng5m.packet.common.CommonHandlers
+import dev.ng5m.packet.common.KeepAlivePacket
 import dev.ng5m.packet.common.PluginMessagePacket
 import dev.ng5m.packet.common.c2s.ResourcePackResponseC2SPacket
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
@@ -54,12 +55,14 @@ class ProtocolState {
         }
 
         val HANDSHAKE: ProtocolState = state {
+            id("HANDSHAKE")
             strictErrorHandling(true)
 
-            register(0x00, HandshakeC2SPacket::class).immediateHandling().handler(HandshakeC2SHandlers::handshake)
+            register(HandshakeC2SPacket::class).immediateHandling().handler(HandshakeC2SHandlers::handshake)
         }
 
         val STATUS: ProtocolState = state {
+            id("STATUS")
             strictErrorHandling(true)
 
             register(StatusRequestC2SPacket::class).handler(StatusC2SHandlers::statusRequest)
@@ -73,6 +76,7 @@ class ProtocolState {
 
 
         val LOGIN: ProtocolState = state {
+            id("LOGIN")
             strictErrorHandling(true)
 
             register(HelloC2SPacket::class).handler(LoginC2SHandlers::hello)
@@ -85,6 +89,7 @@ class ProtocolState {
 
 
         val CONFIGURATION: ProtocolState = state {
+            id("CONFIGURATION")
             strictErrorHandling(true)
 
             register(ClientInformationC2SPacket::class).handler(ConfigurationC2SHandlers::clientInformation)
@@ -107,6 +112,7 @@ class ProtocolState {
 
         val PLAY: ProtocolState = state {
 //            strictErrorHandling(true)
+            id("PLAY")
 
             register(AcceptTeleportationC2SPacket::class).handler(PlayC2SHandlers::acceptTeleportation)
             register(0x07, ChatMessageC2SPacket::class).handler(PlayC2SHandlers::chatMessage)
@@ -115,6 +121,7 @@ class ProtocolState {
             register(0x11, ContainerCloseC2SPacket::class).handler(PlayC2SHandlers::containerClose)
             register(0x14, PluginMessagePacket::class).immediateHandling().handler(CommonHandlers::pluginMessage)
             register(0x18, InteractC2SPacket::class).handler(PlayC2SHandlers::interact)
+            register(0x1A, KeepAlivePacket::class).handler(CommonHandlers::keepAlive)
             register(0x1C, PlayerMoveC2SPacket.Pos::class).excludeFromLogging().handler(PlayC2SHandlers::movePos)
             register(0x1D, PlayerMoveC2SPacket.PosRot::class).excludeFromLogging().handler(PlayC2SHandlers::movePosRot)
             register(0x1E, PlayerMoveC2SPacket.Rot::class).excludeFromLogging().handler(PlayC2SHandlers::moveRot)
@@ -142,6 +149,7 @@ class ProtocolState {
             register(0x20, SyncEntityPositionS2CPacket::class)
             register(0x22, UnloadChunkS2CPacket::class).excludeFromLogging()
             register(0x23, GameEventS2CPacket::class)
+            register(0x27, KeepAlivePacket::class).excludeFromLogging()
             register(0x28, ChunkS2CPacket::class).excludeFromLogging()
             register(0x2A, LevelParticlesS2CPacket::class)
             register(0x2C, JoinS2CPacket::class)
@@ -182,7 +190,13 @@ class ProtocolState {
     private var flow: NetworkFlow = NetworkFlow.SERVERBOUND
     private val loggingExclusions: MutableSet<Class<out Packet>> = mutableSetOf()
 
-    private var id = 0
+    private var packetId = 0
+    private var id: String = "unknown"
+
+    fun id(id: String): ProtocolState {
+        this.id = id
+        return this
+    }
 
     fun <T : Packet> register(id: Int, clazz: KClass<T>): ProtocolState {
         return register(id, clazz.java)
@@ -201,7 +215,7 @@ class ProtocolState {
     }
 
     fun <T : Packet> register(clazz: KClass<T>): ProtocolState {
-        return register(id++, clazz)
+        return register(packetId++, clazz)
     }
 
     private fun ensureRegisteredClassExists() {
@@ -263,7 +277,7 @@ class ProtocolState {
 
     fun switchFlow(): ProtocolState {
         this.flow = if (flow == NetworkFlow.CLIENTBOUND) NetworkFlow.SERVERBOUND else NetworkFlow.CLIENTBOUND
-        id = 0
+        packetId = 0
 
         return this
     }
@@ -300,7 +314,7 @@ class ProtocolState {
 
 
     override fun toString(): String {
-        return "ProtocolState(C2S=$id2TypeServerbound, S2C=$id2TypeClientbound)"
+        return "$id(${id2TypeClientbound.size} S2C, ${id2TypeServerbound.size} C2S)"
     }
 
 }

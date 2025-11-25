@@ -18,8 +18,11 @@ class NettyConnection(private val channel: Channel) : MinecraftConnection() {
     }
 
     override fun close() {
+        MinecraftServer.getInstance().removeConnection(this)
         queuedPackets.clear()
         receivedPackets.clear()
         channel.close().syncUninterruptibly()
     }
+
+    override fun closed(): Boolean = !channel.isOpen
 }

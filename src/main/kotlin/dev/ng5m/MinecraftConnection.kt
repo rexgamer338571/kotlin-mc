@@ -4,6 +4,7 @@ import dev.ng5m.event.EventManager
 import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.mcio.PacketCompression
 import dev.ng5m.packet.PacketHandler
+import dev.ng5m.packet.common.KeepAlivePacket
 import dev.ng5m.packet.common.s2c.DisconnectS2CPacket
 import dev.ng5m.packet.configuration.KnownPacksPacket
 import dev.ng5m.packet.configuration.s2c.FinishConfigurationS2CPacket
@@ -42,6 +43,12 @@ abstract class MinecraftConnection : Ticking {
 
     var disconnectMessage: Component? = null
 
+    var open = true
+
+    var waitingForKeepAlive = false
+    var keepAliveId = -1L
+    var lastKeepAliveTime = -1L
+
     fun sendPacket(packet: Packet): PacketSendContext {
         val ctx = PacketSendContext(packet)
 
@@ -68,6 +75,7 @@ abstract class MinecraftConnection : Ticking {
     fun disconnect(reason: Component) {
         sendPacket(DisconnectS2CPacket(reason)).onFinish {
             removePlayer()
+            open = false
         }
     }
 
@@ -119,6 +127,8 @@ abstract class MinecraftConnection : Ticking {
     }
 
     internal fun internalReceive(packet: Packet) {
+        if (closed()) return
+
         val handler: PacketHandler<Packet> =
             protocolState.handlerFor(packet::class.java) ?: return
         handler.handle(this, packet)
@@ -141,15 +151,39 @@ abstract class MinecraftConnection : Ticking {
 
     abstract fun close()
 
+    abstract fun closed(): Boolean
+
     override fun tick() {
         while (receivedPackets.isNotEmpty()) {
             internalReceive(receivedPackets.poll())
         }
 
+        if (protocolState == ProtocolState.PLAY)
+            keepAlive()
+
         while (queuedPackets.isNotEmpty()) {
+            if (closed()) {
+                queuedPackets.clear()
+                break
+            }
+
             val ctx = queuedPackets.poll()
             internalSend(ctx)
             EventManager.fire(S2CPacketEvent(this, ctx.packet))
+        }
+    }
+
+    private fun keepAlive() {
+        val time = System.currentTimeMillis()
+        if (time - lastKeepAliveTime >= 15000L) {
+            if (waitingForKeepAlive) {
+                disconnect(Component.text("Slimed out"))
+            } else {
+                waitingForKeepAlive = true
+                lastKeepAliveTime = time
+                keepAliveId = time
+                sendPacket(KeepAlivePacket(keepAliveId))
+            }
         }
     }
 }

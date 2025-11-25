@@ -3,10 +3,7 @@ package dev.ng5m
 import de.articdive.jnoise.core.api.functions.Interpolation
 import de.articdive.jnoise.generators.noise_parameters.fade_functions.FadeFunction
 import de.articdive.jnoise.pipeline.JNoise
-import dev.ng5m.api.ChunkAccess
-import dev.ng5m.api.KMc
 import dev.ng5m.block.Blocks
-import dev.ng5m.entity.ArmorStandEntity
 import dev.ng5m.entity.BlockEntity
 import dev.ng5m.entity.BlockEntityType
 import dev.ng5m.entity.DisplayEntity
@@ -15,41 +12,28 @@ import dev.ng5m.event.impl.S2CPacketEvent
 import dev.ng5m.event.impl.player.PlayerJoinEvent
 import dev.ng5m.event.impl.player.PlayerMoveEvent
 import dev.ng5m.event.impl.player.PlayerPreJoinEvent
-import dev.ng5m.event.impl.player.PlayerStartConfigurationEvent
+import dev.ng5m.event.impl.player.ResourcePackResponseEvent
 import dev.ng5m.item.ItemStack
 import dev.ng5m.item.Items
-import dev.ng5m.item.component.ItemComponentTypes
 import dev.ng5m.pack.ResourcePack
 import dev.ng5m.pack.ResourcePackManager
 import dev.ng5m.pack.ResourcePackServer
-import dev.ng5m.packet.common.s2c.ResourcePackPushS2CPacket
-import dev.ng5m.packet.play.s2c.SetEntityMotionS2CPacket
-import dev.ng5m.packet.play.s2c.SyncEntityPositionS2CPacket
+import dev.ng5m.packet.common.c2s.ResourcePackResponseC2SPacket
 import dev.ng5m.player.GameMode
-import dev.ng5m.player.Player
 import dev.ng5m.registry.Biome
 import dev.ng5m.registry.DimensionTypes
 import dev.ng5m.registry.Registries
 import dev.ng5m.serialization_kt.Either
 import dev.ng5m.util.TypeArguments
-import dev.ng5m.util.copy
-import dev.ng5m.util.readFileOrResource
-import dev.ng5m.util.sha1
 import dev.ng5m.world.*
-import dev.ng5m.world.anvil.AnvilLoader
 import dev.ng5m.world.particle.ParticleOptions
 import dev.ng5m.world.particle.ParticleTypes
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import org.joml.Vector3d
 import org.joml.Vector3f
+import org.slf4j.simple.SimpleLogger
 import java.net.URI
-import java.nio.file.Path
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 import kotlin.random.Random
 
 
@@ -271,12 +255,14 @@ fun randomBullshitServer() {
 }
 
 fun main() {
-    simpleServer()
+    shaderServer()
 }
 
 const val RPS_PORT = 9898
 
-fun simpleServer() {
+fun shaderServer() {
+    System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+
     val server = MinecraftServer()
 
     val rp = ResourcePack(
@@ -304,6 +290,12 @@ fun simpleServer() {
             it.item = ItemStack(Items.NETHERITE_AXE)
             it.scale = Vector3f(10f, 2f, 0.5f)
         })
+
+    EventManager.register(ResourcePackResponseEvent::class) { (conn, packet) ->
+        if (packet.status != ResourcePackResponseC2SPacket.Status.SUCCESS) {
+            conn.disconnect(Component.text("uninstall sodium"))
+        }
+    }
 
     EventManager.register(PlayerPreJoinEvent::class) { event ->
         event.player.setWorld(world)

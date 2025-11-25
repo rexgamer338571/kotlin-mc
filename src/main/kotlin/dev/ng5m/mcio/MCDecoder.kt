@@ -144,7 +144,7 @@ class MCDecoder : ReplayingDecoder<MCDecoder.State>() {
 
             val packet: Packet = codec.read(decompressed)
 
-            if (protocolState.shouldLog(packet::class.java)) LOGGER.debug { "${"C -> S: {}"} $packet" }
+            if (protocolState.shouldLog(packet::class.java)) LOGGER.debug { "C -> S: $packet" }
             out.add(packet)
 
         } catch (e: Exception) {
